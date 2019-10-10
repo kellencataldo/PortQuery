@@ -56,44 +56,13 @@ class argumentParser {
         }
 
         bool parse(void) {
-            if(m_arguments.empty() || m_arguments.at(0) == "--usage") {
-                displayHelpText();
-                return false;
+            if(parseEngine()) {
+                return true;
             }
-
-            std::shared_ptr<commandBase> sliding = nullptr;
-            for (auto argument = m_arguments.begin(); argument != m_arguments.end()-1; argument++) {
-                if(isCommand(*argument) && m_commands.find(*argument) != m_commands.end()) {
-                    if(sliding != nullptr && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
-                        std::cout << "ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage" << std::endl;
-                        return false;
-                    }
-
-                    sliding = m_commands.find(*argument)->second;
-                    if(sliding->m_commandType == COMMAND_TYPE_FLAG) {
-                        std::dynamic_pointer_cast<commandArgument<bool>>(sliding)->m_value = true;
-                        sliding = nullptr;
-                    }
-                    continue;
-                }
-
-                else if(sliding != nullptr && sliding->parseArgument(*argument)) {
-                    sliding = (sliding->m_commandType == COMMAND_TYPE_POSITIONAL ? nullptr : sliding);
-                    continue;
-                }
-
-                std::cout << "MISMATCHED ARGUMENT SPECIFIED: " << *argument << ". SEE --usage" << std::endl;
-                return false;
-            }
-
-            if(sliding && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
-                std::cout << "ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage" << std::endl;
-                return false;
-            }
-
-            m_queryString = *m_arguments.rbegin();
-            return true;
-        }
+            m_commands.clear();
+            m_queryString.clear();
+            return false;
+       }
 
     private:
         enum COMMAND_TYPE {
@@ -163,21 +132,6 @@ class argumentParser {
             m_commands.emplace(command, std::make_shared<commandArgument<T>>(defaultVal, commandType, helpText));
         }
 
-
-        void displayHelpText(void) const {
-            size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(),
-                    [](const auto& lhs, const auto& rhs)
-                    {return lhs.first.size() < rhs.first.size();})->first.size() + 50;
-                std::cout << "WELCOME TO PORT QUERY. WHY ARE YOU USING THIS." << std::endl;
-                std::cout << "USAGE: [OPTION1, OPTION2...] QUERY_STRING" << std::endl;
-                std::cout.width(maxLength);
-                std::cout << std::left << "    OPTION" << "HELP" << std::endl;
-                std::for_each(m_commands.begin(), m_commands.end(), [&maxLength](const auto& e){
-                    std::cout.width(maxLength);
-                    std::cout  << ("    " + e.first + " " + e.second->getArgString());
-                    std::cout << e.second->m_helpText << std::endl;});
-        }
-
         static void convertArgument(std::string argument, int& value) {
             value = std::stoi(argument);
         }
@@ -229,6 +183,61 @@ class argumentParser {
 
             return std::dynamic_pointer_cast<commandArgument<T>>(commandCandidate->second)->m_value;
         }
+
+        bool parseEngine(void) {
+            if(std::find(m_arguments.begin(), m_arguments.end(), "--usage") != m_arguments.end() ||
+                m_arguments.empty()) {
+                std::cout << "WELCOME TO PORT QUERY. WHY ARE YOU USING THIS." << std::endl;
+                std::cout << "USAGE: [OPTION1, OPTION2...] QUERY_STRING" << std::endl;
+                if(m_commands.empty()) { return false; }
+                size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(),
+                    [](const auto& lhs, const auto& rhs)
+                    {return lhs.first.size() < rhs.first.size();})->first.size() + 50;
+                std::cout.width(maxLength);
+                std::cout << std::left << "    OPTION" << "HELP" << std::endl;
+                std::for_each(m_commands.begin(), m_commands.end(), [&maxLength](const auto& e){
+                    std::cout.width(maxLength);
+                    std::cout  << ("    " + e.first + " " + e.second->getArgString());
+                    std::cout << e.second->m_helpText << std::endl;});
+                return false;
+            }
+
+            std::shared_ptr<commandBase> sliding = nullptr;
+            for (auto argument = m_arguments.begin(); argument != m_arguments.end()-1; argument++) {
+                if(isCommand(*argument) && m_commands.find(*argument) != m_commands.end()) {
+                    if(sliding != nullptr && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
+                        std::cout << "ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage" << std::endl;
+                        return false;
+                    }
+
+                    sliding = m_commands.find(*argument)->second;
+                    if(sliding->m_commandType == COMMAND_TYPE_FLAG) {
+                        std::dynamic_pointer_cast<commandArgument<bool>>(sliding)->m_value = true;
+                        sliding = nullptr;
+                    }
+                    continue;
+                }
+
+                else if(sliding != nullptr && sliding->parseArgument(*argument)) {
+                    sliding = (sliding->m_commandType == COMMAND_TYPE_POSITIONAL ? nullptr : sliding);
+                    continue;
+                }
+
+                std::cout << "MISMATCHED ARGUMENT SPECIFIED: " << *argument << ". SEE --usage" << std::endl;
+                return false;
+            }
+
+            if(sliding && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
+                std::cout << "ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage" << std::endl;
+                return false;
+            }
+
+            m_queryString = *m_arguments.rbegin();
+            return true;
+        }
+
+
+
 
         std::vector<std::string> m_arguments;
         std::map<std::string, std::shared_ptr<commandBase>> m_commands;
