@@ -46,15 +46,6 @@ class argumentParser {
             return getValue<bool>(command, COMMAND_TYPE_FLAG);
         }
 
-        template <typename T>
-        T getValue(std::string command) const {
-            if(m_commands.find(command) == m_commands.end()) {
-                std::string message("Unknown command: " + command);
-                throw std::invalid_argument(formatMessage(__FILE__, __func__, __LINE__, message));
-            }
-            return std::dynamic_pointer_cast<commandArgument<T>>(m_commands.find(command)->second)->m_value;
-        }
-
         bool parse(void) {
             if(parseEngine()) {
                 return true;
@@ -62,7 +53,11 @@ class argumentParser {
             m_commands.clear();
             m_queryString.clear();
             return false;
-       }
+        }
+
+        std::string getQueryString(void) const {
+            return m_queryString;
+        }
 
     private:
         enum COMMAND_TYPE {
@@ -95,7 +90,7 @@ class argumentParser {
                         argumentParser::convertArgument(argument, m_value);
                     }
                     catch(std::exception& e) {
-                        std::cout << e.what() << std::endl;
+                        std::cout << "EXCEPTION INFORMATION: " << e.what() << std::endl;
                         return false;
                     }
                     return true;
@@ -236,10 +231,7 @@ class argumentParser {
             return true;
         }
 
-
-
-
+        std::string m_queryString;
         std::vector<std::string> m_arguments;
         std::map<std::string, std::shared_ptr<commandBase>> m_commands;
-        std::string m_queryString;
 };
