@@ -67,8 +67,8 @@ class argumentParser {
 
         class commandBase {
             public:
-                explicit commandBase(const COMMAND_TYPE _commandType, const std::string _helpText) :
-                    m_commandType(_commandType), m_helpText(_helpText) { }
+                explicit commandBase(const COMMAND_TYPE commandType, const std::string helpText) :
+                    m_commandType(commandType), m_helpText(helpText) { }
                 virtual ~commandBase(void) { }
                 virtual bool parseArgument(const std::string argument) = 0;
                 virtual std::string getArgString(void) const = 0;
@@ -80,9 +80,9 @@ class argumentParser {
         template <typename T>
         class commandArgument : public commandBase {
             public:
-                explicit commandArgument(const T _default, const COMMAND_TYPE _commandType,
-                        const std::string _helpText) :
-                    commandBase(_commandType, _helpText), m_value(_default) { }
+                explicit commandArgument(const T defaultValue, const COMMAND_TYPE commandType,
+                        const std::string helpText) :
+                    commandBase(commandType, helpText), m_value(defaultValue) { }
 
                 bool parseArgument(const std::string argument) {
                     try {
