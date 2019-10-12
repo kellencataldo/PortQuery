@@ -1,5 +1,6 @@
-#include "ArgumentParser.h"
 #include <iostream>
+#include "ArgumentParser.h"
+#include "PortQuery.h"
 
 
 int main(int argc, char* args[]) {
@@ -8,6 +9,9 @@ int main(int argc, char* args[]) {
     if(!parser.parse()) {
         return static_cast<unsigned int>(-1);
     }
-    
+
+    std::string queryString = parser.getQueryString();
+    portQuery pq;
+    pq.printTest();
     return 0;
 }

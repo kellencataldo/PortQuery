@@ -4,8 +4,7 @@ message(STATUS "STARTING TOP LEVEL CMAKELISTS.TXT")
 cmake_minimum_required (VERSION 3.10.2)
 message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_SOURCE_DIR}/bin")
+message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
 
 # test this please
 if(NOT DEFINED CATCH2_INCLUDE)
@@ -18,6 +17,7 @@ foreach(directory ${directories})
     message(STATUS "INCLUDE DIRECTORY: ${directory}")
 endforeach()
 
+add_subdirectory(source)
 add_subdirectory(cli)
 add_subdirectory(tests)
 
