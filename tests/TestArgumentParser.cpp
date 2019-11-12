@@ -1,5 +1,5 @@
 #include "catch.hpp"
-#include "ArgumentParser.h"
+#include "../cli/ArgumentParser.h"
 #include <iostream>
 
 

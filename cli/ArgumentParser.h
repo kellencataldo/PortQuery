@@ -7,9 +7,6 @@
 #include <iostream>
 #include <limits>
 
-#include "LogFormat.h"
-
-
 // @todo: comment and test this please
 
 class argumentParser {
@@ -49,6 +46,7 @@ class argumentParser {
             if(parseEngine()) {
                 return true;
             }
+
             m_commands.clear();
             m_queryString.clear();
             return false;
@@ -114,13 +112,11 @@ class argumentParser {
         void validateThenAdd(const std::string command, const T defaultVal, const COMMAND_TYPE commandType,
                 const std::string helpText) {
             if(!isCommand(command)) {
-                std::string message("Option format is two hyphens followed by alphabetical characters");
-                throw std::invalid_argument(formatMessage(__FILE__, __func__, __LINE__, message));
+                throw std::invalid_argument("Option format is two hyphens followed by alphabetical characters");
             }
 
             if(m_commands.find(command) != m_commands.end()) {
-                std::string message("Duplicate option detected");
-                throw std::invalid_argument(formatMessage(__FILE__, __func__, __LINE__, message));
+                throw std::invalid_argument("duplicate option detected");
             }
 
             m_commands.emplace(command, std::make_shared<commandArgument<T>>(defaultVal, commandType, helpText));
@@ -135,8 +131,7 @@ class argumentParser {
         }
 
         static void convertArgument(std::string argument, bool& value) {
-            std::string message("Boolean commands do not get converted");
-            throw std::invalid_argument(formatMessage(__FILE__, __func__, __LINE__, message));
+            throw std::invalid_argument("boolean commands do not get converted");
         }
 
         template<typename T>
@@ -168,11 +163,9 @@ class argumentParser {
         T getValue(const std::string command, const COMMAND_TYPE commandType) const {
             const auto commandCandidate = m_commands.find(command);
             if(commandCandidate == m_commands.end()) {
-                std::string message("Unknown command: " + command);
-                throw std::invalid_argument(formatMessage(__FILE__, __func__, __LINE__, message));
+                throw std::invalid_argument("Unknown command: " + command);
             } else if (commandCandidate->second->m_commandType != commandType) {
-                std::string message("Requested command type does not match actual command type");
-                throw std::invalid_argument(formatMessage(__FILE__, __func__, __LINE__, message));
+                throw std::invalid_argument("Requested command type does not match actual command type");
             }
 
             return std::dynamic_pointer_cast<commandArgument<T>>(commandCandidate->second)->m_value;
