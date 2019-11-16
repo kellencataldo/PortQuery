@@ -26,6 +26,6 @@ foreach(directory ${directories})
 endforeach()
 
 add_subdirectory(libportquery)
-add_subdirectory(cli)
+add_subdirectory(cliportquery)
 add_subdirectory(tests)
 
