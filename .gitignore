@@ -1,2 +1,3 @@
-thirdparty
-/thirdparty/*
+build
+_vimrc_local.vim
+to_do.txt
