@@ -11,6 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+include_directories(libportquery/include)
 get_property(directories DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 foreach(directory ${directories})
     message(STATUS "INCLUDE DIRECTORY: ${directory}")
@@ -22,5 +23,3 @@ option(BUILD_TEST_BINARIES "Setting this will download and build the googletest 
 if (BUILD_TEST_BINARIES)
     add_subdirectory(tests)
 endif()
-
-

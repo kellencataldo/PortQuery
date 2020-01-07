@@ -4,12 +4,21 @@
 #include <string>
 #include <memory>
 #include <algorithm>
-#include <iostream>
 #include <limits>
 
 // @todo: comment and test this please
 
-class argumentParser {
+
+struct emptyOutput {
+    public:
+        static void output(const std::string outputString) { }
+        static void setWidth(const size_t width) { }
+    protected:
+        ~emptyOutput() { }
+};
+
+
+template <typename outputPolicy = emptyOutput> class argumentParser : public outputPolicy {
     public:
         explicit argumentParser(const int argc, const char * const argv[]) :
             m_arguments(argv + 1, argv + argc) { }
@@ -87,7 +96,7 @@ class argumentParser {
                         argumentParser::convertArgument(argument, m_value);
                     }
                     catch(std::exception& e) {
-                        std::cout << "EXCEPTION INFORMATION: " << e.what() << std::endl;
+                        outputPolicy::output(std::string("EXCEPTION INFORMATION: ") + e.what());
                         return false;
                     }
                     return true;
@@ -174,18 +183,18 @@ class argumentParser {
         bool parseEngine(void) {
             if(std::find(m_arguments.begin(), m_arguments.end(), "--usage") != m_arguments.end() ||
                 m_arguments.empty()) {
-                std::cout << "WELCOME TO PORT QUERY. WHY ARE YOU USING THIS." << std::endl;
-                std::cout << "USAGE: [OPTION1, OPTION2...] QUERY_STRING" << std::endl;
+                outputPolicy::output("WELCOME TO PORT QUERY. WHY ARE YOU USING THIS.");
+                outputPolicy::output("USAGE: [OPTION1, OPTION2...] QUERY_STRING");
                 if(m_commands.empty()) { return false; }
                 size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(),
                     [](const auto& lhs, const auto& rhs)
                     {return lhs.first.size() < rhs.first.size();})->first.size() + 50;
-                std::cout.width(maxLength);
-                std::cout << std::left << "    OPTION" << "HELP" << std::endl;
-                std::for_each(m_commands.begin(), m_commands.end(), [&maxLength](const auto& e){
-                    std::cout.width(maxLength);
-                    std::cout  << ("    " + e.first + " " + e.second->getArgString());
-                    std::cout << e.second->m_helpText << std::endl;});
+                this->setWidth(maxLength);
+                outputPolicy::output("    OPTION HELP");
+                std::for_each(m_commands.begin(), m_commands.end(), [maxLength](const auto& e){
+                    outputPolicy::setWidth(maxLength);
+                    outputPolicy::output("    " + e.first + " " + e.second->getArgString());
+                    outputPolicy::output(e.second->m_helpText);});
                 return false;
             }
 
@@ -193,7 +202,7 @@ class argumentParser {
             for (auto argument = m_arguments.begin(); argument != m_arguments.end()-1; argument++) {
                 if(isCommand(*argument) && m_commands.find(*argument) != m_commands.end()) {
                     if(sliding != nullptr && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
-                        std::cout << "ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage" << std::endl;
+                        outputPolicy::output("ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage");
                         return false;
                     }
 
@@ -210,12 +219,12 @@ class argumentParser {
                     continue;
                 }
 
-                std::cout << "MISMATCHED ARGUMENT SPECIFIED: " << *argument << ". SEE --usage" << std::endl;
+                outputPolicy::output("MISMATCHED ARGUMENT SPECIFIED: " + *argument + ". SEE --usage");
                 return false;
             }
 
             if(sliding && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
-                std::cout << "ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage" << std::endl;
+                outputPolicy::output("ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage");
                 return false;
             }
 
