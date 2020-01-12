@@ -9,17 +9,17 @@ TEST(ParseHelpCommand, ReturnsFalse) {
     // No arguments supplied counts as a fail
     const int argc_T1 = 1;
     const char* args_T1[argc_T1] = {"./cli"};
-    EXPECT_FALSE(argumentParser<>(argc_T1, args_T1).parse());
+    EXPECT_FALSE(argumentParser<emptyOutput>(argc_T1, args_T1).parse());
 
     // Usage flag alone counts as a fail
     const int argc_T2 = 2;
     const char * args_T2[argc_T2] = {"./cli", "--usage"};
-    EXPECT_FALSE(argumentParser<>(argc_T2, args_T2).parse());
+    EXPECT_FALSE(argumentParser<emptyOutput>(argc_T2, args_T2).parse());
 
     // Usage flag specified anywhere in command counts as a fail
     const int argc_T3 = 4;
     const char * args_T3[argc_T3] = {"./cli", "--valid", "--usage", "potential_query_string"};
-    argumentParser<> parser(argc_T3, args_T3);
+    argumentParser<emptyOutput> parser(argc_T3, args_T3);
     parser.addCommandFlag("--valid", "dummy command");
     EXPECT_FALSE(parser.parse());
 }
@@ -29,7 +29,7 @@ TEST(ParseHelpCommand, ReturnsFalse) {
 TEST(ParseArguments, PositionalArguments) {
     const int argc_T1 = 6;
     const char * args_T1[argc_T1] = {"./cli", "--debug", "5", "--term", "search", "query_string_here"};
-    argumentParser<> parser(argc_T1, args_T1);
+    argumentParser<emptyOutput> parser(argc_T1, args_T1);
     parser.addCommand<int>("--debug", "help text", 1);
     parser.addCommand<std::string>("--term", "help text", std::string("default"));
     parser.addCommand<std::string>("--file", "help text", std::string("/some/file"));
@@ -45,7 +45,7 @@ TEST(ParseArguments, PositionalArguments) {
     // Command argument which cannot be converted counts as a fail
     const int argc_T2 = 4;
     const char * args_T2[argc_T2] = {"./cli", "--intcommand", "alphabeta", "query_string_here"};
-    argumentParser<> parser2(argc_T2, args_T2);
+    argumentParser<emptyOutput> parser2(argc_T2, args_T2);
 
     parser2.addCommand<int>("--intcommand", "help text", 1);
     EXPECT_FALSE(parser2.parse());
@@ -53,7 +53,7 @@ TEST(ParseArguments, PositionalArguments) {
     // Command with no argument supplied counts as a fail
     const int argc_T3 = 3;
     const char * args_T3[argc_T3] = {"./cli", "--command", "query_string_here"};
-    argumentParser<> parser3(argc_T3, args_T3);
+    argumentParser<emptyOutput> parser3(argc_T3, args_T3);
     EXPECT_FALSE(parser3.parse());
 }
 
@@ -63,7 +63,7 @@ TEST(ParseArguments, FlagArguments) {
     const int argc_T1 = 4;
     const char * args_T1[argc_T1] = {"./cli", "--first", "--second", "potential_query_string"};
 
-    argumentParser<> parser(argc_T1, args_T1);
+    argumentParser<emptyOutput> parser(argc_T1, args_T1);
     parser.addCommandFlag("--first", "help text");
     parser.addCommandFlag("--second", "help text");
     parser.addCommandFlag("--third", "help text");
@@ -82,7 +82,7 @@ TEST(ParseArguments, ListArguments) {
 
     const int argc_T1 = 6;
     const char * args_T1[argc_T1] = {"./cli", "--list", "1", "2", "3", "query_string_here"};
-    argumentParser<> parser(argc_T1, args_T1);
+    argumentParser<emptyOutput> parser(argc_T1, args_T1);
 
     parser.addCommandList<int>("--list", "help text");
     ASSERT_TRUE(parser.parse());
@@ -94,7 +94,7 @@ TEST(ParseArguments, ListArguments) {
     // List population stops after another flag is found
     const int argc_T2 = 6;
     const char * args_T2[argc_T2] = {"./cli", "--list", "arg1", "arg2", "--unrelated", "query_string_here"};
-    argumentParser<> parser2(argc_T2, args_T2);
+    argumentParser<emptyOutput> parser2(argc_T2, args_T2);
 
     parser2.addCommandList<std::string>("--list", "help text");
     parser2.addCommandFlag("--unrelated", "help text");
