@@ -8,6 +8,8 @@
 
 // @todo: comment and test this please
 
+// This empty output policy exists so that when testing these methods the console
+// is not clogged up with error messages from the argument parser
 
 struct emptyOutput {
     public:
@@ -16,6 +18,25 @@ struct emptyOutput {
     protected:
         ~emptyOutput() { }
 };
+
+
+// This is the standard output policy class
+
+struct STDOutput {
+    public:
+        static void output(const std::string outputString) { 
+            std::cout << outputString << std::endl;
+        }
+
+        static void setWidth(const size_t width) { 
+            std::cout.width(width);
+        }
+
+    protected:
+        ~STDOutput() { }
+};
+
+
 
 
 template <typename outputPolicy = emptyOutput> class argumentParser : public outputPolicy {

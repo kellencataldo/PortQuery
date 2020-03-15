@@ -3,10 +3,9 @@
 
 
 class portQuery {
+
     public:
-//        explicit execute(std::string queryString) { }
-
+        
+        void execute(std::string queryString) { }
         void printTest();
-
-
 };
