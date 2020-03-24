@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <string_view>
+#include <map>
 
-
+/*
 enum class TokenType {
     // KEY WORDS
     
@@ -18,7 +20,7 @@ enum class TokenType {
     COUNT,
     CROSS,
     DESC,
-    DESCRIBE, /* keep this? */
+    DESCRIBE,  keep this? 
     DISTINCT,
     DISTINCTROW,
     ELSE,
@@ -44,8 +46,8 @@ enum class TokenType {
     OUTER,
     RIGHT,
     SELECT,
-    STRAIGHT_JOIN, /* keep this too? */
-    THEN, /* keep conditionals */
+    STRAIGHT_JOIN,  keep this too? 
+    THEN,  keep conditionals 
     TO,
     UNION,
     UNIQUE,
@@ -68,16 +70,78 @@ enum class TokenType {
     EQ,
     NOT_EQ,
 };
+*/
+
+enum class TokenType {
+    KEYWORD,
+    OPERATOR,
+    NUMBER,
+    COLUMN,
+    URL
+};
 
 
 class Token {
     public:
-        Token(const TokenType type, const std::string lexeme, const size_t offset, const size_t location) :
-            m_type(type), m_lexeme(lexeme), m_location(location) { }
+        Token(const TokenType type, std::string_view tokenView) : m_type(type), m_tokenView(tokenView) { }
+
+        const TokenType getTokenType(void) const {
+            return m_type;
+        }
+
 
     private:
         TokenType m_type;
-        std::string m_lexeme;
-        size_t m_location;
+        std::string_view m_tokenView;
+};
+
+
+class KeywordToken {
+    public:
+        enum Keyword {
+            ALL,
+            AND_BETWEEN,
+            ANY,
+            BETWEEN,
+            COUNT,
+            FROM,
+            // GROUP_BY,
+            // HAVING,
+            IF,
+            IN,
+            IS,
+            LIKE,
+            LIMIT,
+            NOT,
+            OR,
+            ORDER,
+            SELECT,
+            WHERE,
+        };
+
+    private:
+        static std::map<std::string, Keyword> m_keywordMap;
+};
+
+std::map<std::string, KeywordToken::Keyword> KeywordToken::m_keywordMap = {
+
+
+
+};
+
+class Scanner {
+    public:
+        Scanner(const std::string queryString) : m_queryString(queryString), m_errorSet(false) {
+            m_start = m_queryString.cbegin();
+            m_nextChar = m_queryString.cbegin();
+
+        }
+
+
+    private:
+        std::string m_queryString;
+        std::string::const_iterator m_start;
+        std::string::const_iterator m_nextChar;
+        bool m_errorSet;
 };
 

@@ -19,6 +19,7 @@ endforeach()
 
 add_subdirectory(libportquery)
 add_subdirectory(cliportquery)
+
 option(BUILD_TEST_BINARIES "Setting this will download and build the googletest project so that tests can be run" ON)
 if (BUILD_TEST_BINARIES)
     add_subdirectory(tests)
