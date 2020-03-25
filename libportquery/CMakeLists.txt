@@ -2,7 +2,7 @@ message("STARTING SOURCE CMAKELISTS.TXT")
 
 add_library(libportquery STATIC 
     source/PortQuery.cpp
-    source/Scanner.cpp
+    source/Lexer.cpp
     )
 
 
