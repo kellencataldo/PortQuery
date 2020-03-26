@@ -1,6 +1,5 @@
 #include "gtest/gtest.h"
 #include "../cliportquery/ArgumentParser.h"
-#include <iostream>
 
 
 // Help message found and counts as a fail

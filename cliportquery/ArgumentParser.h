@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <map>
 #include <string>
@@ -6,10 +7,12 @@
 #include <algorithm>
 #include <limits>
 
-// @todo: comment and test this please
 
 // This empty output policy exists so that when testing these methods the console
-// is not clogged up with error messages from the argument parser
+// is not clogged up with error messages from the argument parser. This is the default policy
+// To use this in any meaningful way, simply create a new output policy which supports the methods
+// present in the example empty output class. Then instantiate the argumentParser 
+// template with this new class
 
 struct emptyOutput {
     public:
@@ -20,59 +23,72 @@ struct emptyOutput {
 };
 
 
-// This is the standard output policy class
-
-struct STDOutput {
-    public:
-        static void output(const std::string outputString) { 
-            std::cout << outputString << std::endl;
-        }
-
-        static void setWidth(const size_t width) { 
-            std::cout.width(width);
-        }
-
-    protected:
-        ~STDOutput() { }
-};
-
-
-
+// This is the argument parser policy, a simple rudimentary argument parser which can handle
+// a flag (IE --flag) a positional commands (IE --positional argument) or a list of arguments
+// (IE --list arg1 arg2 arg2). The query string is assumed to be the last argument and is 
+// stored as a string
+//
+// The types that are currently supported as command parameters are: strings and ints
+// Flag arguments are treated as bools: (flag present == true, flag not present == false)
+// Arguments supplied to list commands must all be the same type
 
 template <typename outputPolicy = emptyOutput> class argumentParser : public outputPolicy {
     public:
+
+        // The argument parser constructor is designed to take arguments directly from the arguments
+        // passed on the command line to the main entry of the program
         explicit argumentParser(const int argc, const char * const argv[]) :
+            // This first argument is skipped, because this is the name of the image being executed, and
+            // this is not important to our application
             m_arguments(argv + 1, argv + argc) { }
 
+        // This method registers a command with the parser. Callers must supply the type of argument
+        // they respect to receive upon retrieval, a default value for the command must be supplied
+        // A help text which describes the functionality of the command
         template <typename T>
         void addCommand(const std::string command, const std::string helpText, const T defaultValue) {
             validateThenAdd<T>(command, defaultValue, COMMAND_TYPE_POSITIONAL, helpText);
         }
 
+        // This method retrieves the specified command, the template parameter used here must match what 
+        // template parameter was used when calling addCommand
         template <typename T>
         T getCommand(const std::string command) {
             return getValue<T>(command, COMMAND_TYPE_POSITIONAL);
         }
 
+        // This method registers a command list with the parser, parsers need only supply the help text
+        // The default value is simply an empty list. Every argument following this command will be converted
+        // To the template argument type. A help text is required to describe the functionality
+        // of this command
         template <typename T>
         void addCommandList(const std::string command, const std::string helpText) {
             validateThenAdd<std::vector<T>>(command, std::vector<T>(), COMMAND_TYPE_LIST, helpText);
         }
 
+        // This method retrieves the specified command list, the template parameter used here must
+        // match what template parameter was used when calling addCommandList
         template <typename T>
         std::vector<T> getCommandList(const std::string command) {
             return getValue<std::vector<T>>(command, COMMAND_TYPE_LIST);
         }
 
+        // This method registers a flag with the parser. There is no default parameter needed as 
+        // presence is used instead. If the flag has been supplied, that means the value is true.
+        // If it is not supplied as a part of the command line arguments, it is false.
         void addCommandFlag(const std::string command, const std::string helpText) {
             validateThenAdd<bool>(command, false, COMMAND_TYPE_FLAG, helpText);
         }
 
+        // This method checks if the registered flag was supplied on the command line or not
         bool getCommandFlag(const std::string command) {
             return getValue<bool>(command, COMMAND_TYPE_FLAG);
         }
 
         bool parse(void) {
+
+            // This method is a wrapper around the actual parsing engine below, on failure, it
+            // wipes out all state in the parser
             if(parseEngine()) {
                 return true;
             }
@@ -87,6 +103,10 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
         }
 
     private:
+
+        // An enum containing all the different types of commands which are supported by the parser,
+        // These are stored in the base class below and used to downcast base class pointers to the
+        // inherited command subtypes
         enum COMMAND_TYPE {
             COMMAND_TYPE_POSITIONAL,
             COMMAND_TYPE_LIST,
