@@ -3,6 +3,9 @@
 #include <string>
 #include <string_view>
 #include <map>
+#include <variant>
+#include <optional>
+#include <functional>
 
 /*
 enum class TokenType {
@@ -70,78 +73,105 @@ enum class TokenType {
     EQ,
     NOT_EQ,
 };
+
 */
 
-enum class TokenType {
-    KEYWORD,
-    OPERATOR,
-    NUMBER,
-    COLUMN,
-    URL
+
+// Enum of all supported keywords
+enum class Keyword {
+    ALL,
+    AND_BETWEEN,
+    ANY,
+    BETWEEN,
+    COUNT,
+    FROM,
+    // GROUP_BY,
+    // HAVING,
+    IF,
+    IN,
+    IS,
+    LIKE,
+    LIMIT,
+    NOT,
+    OR,
+    ORDER,
+    SELECT,
+    WHERE,
 };
 
+// This token represents all keywords from the above enum.
+// No other information except which keyword is needed
+struct KeywordToken { Keyword m_keyword; };
 
-class Token {
+enum class Column {
+    PORT,
+    TCP,
+    UDP
+};
+
+// This token represents the names of all the columes that can be queried.
+// Maybe this could change or be expanded in the future to be more dynamic, but for right now
+// this is as future proof as it gets.
+struct ColumnToken { Column m_column; };
+
+// This token represents any numeric value.
+// For right now, only values which can be stored in an unsigned short
+// without truncation are supported
+// This could change I guess IDC.
+struct NumericToken { uint16_t m_value; };
+
+// This token represents a binary comparison operator such as !=
+struct ComparisonToken { std::function<uint16_t(const uint16_t, const uint16_t)> m_compareFunc; };
+
+// This token represents a URL upon which to make queries
+struct URLToken { std::string_view m_URL; };
+
+// This token should be pretty self explanatory.
+struct EOFToken { };
+
+// This token represents single character punctuation.
+// This type of punctuation includes semicolon, asterisk, comma, etc
+// This is distinctly separate from binary comparison tokens
+template <char> struct PunctuationToken { };
+
+using Token = std::variant<
+    KeywordToken,
+    ColumnToken,
+    NumericToken,
+    ComparisonToken,
+    URLToken,
+    EOFToken,
+
+    // All the supported punctuation types below, maybe more to come?
+    PunctuationToken<'*'>,
+    PunctuationToken<'('>,
+    PunctuationToken<')'>,
+    PunctuationToken<','>,
+    PunctuationToken<';'>
+    >;
+
+
+class Lexer { 
     public:
-        Token(const TokenType type, std::string_view tokenView) : m_type(type), m_tokenView(tokenView) { }
-
-        const TokenType getTokenType(void) const {
-            return m_type;
+        Lexer(const std::string queryString) : m_queryString{std::move(queryString)} {
+            m_tokenStart = m_queryString.cbegin();
+            m_currentChar = m_queryString.cbegin();
+        
         }
 
+        Token nextToken();
 
     private:
-        TokenType m_type;
-        std::string_view m_tokenView;
-};
-
-
-class KeywordToken {
-    public:
-        enum Keyword {
-            ALL,
-            AND_BETWEEN,
-            ANY,
-            BETWEEN,
-            COUNT,
-            FROM,
-            // GROUP_BY,
-            // HAVING,
-            IF,
-            IN,
-            IS,
-            LIKE,
-            LIMIT,
-            NOT,
-            OR,
-            ORDER,
-            SELECT,
-            WHERE,
-        };
-
-    private:
-        static std::map<std::string, Keyword> m_keywordMap;
-};
-
-std::map<std::string, KeywordToken::Keyword> KeywordToken::m_keywordMap = {
-
-
-
-};
-
-class Scanner {
-    public:
-        Scanner(const std::string queryString) : m_queryString(queryString), m_errorSet(false) {
-            m_start = m_queryString.cbegin();
-            m_nextChar = m_queryString.cbegin();
-
-        }
-
-
-    private:
+        
+        // This query string represents the SQL query to be scanned
         std::string m_queryString;
-        std::string::const_iterator m_start;
-        std::string::const_iterator m_nextChar;
-        bool m_errorSet;
-};
 
+        // This peek token is occasionally necessary when the parser wants to lookahead at
+        // the next token without advancing the lexer
+        // An example of this is when parsing "GROUP BY" because the keyword GROUP only
+        // makes sense when followed by the keyword BY. This context can be necessary sometimes
+        std::optional<Token> m_peekToken;
+
+        std::string::const_iterator m_tokenStart;
+        std::string::const_iterator m_currentChar;
+};

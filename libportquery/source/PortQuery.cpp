@@ -1,8 +1,11 @@
 #include <iostream>
+
 #include "PortQuery.h"
+#include "Lexer.h"
 
 void portQuery::printTest() {
     std::cout << "linked correctly" << std::endl;
-//    lexer lex("just a dumb example");
+    Lexer lex("just a dumb example");
+    Token fuck = lex.nextToken();
 
 }
