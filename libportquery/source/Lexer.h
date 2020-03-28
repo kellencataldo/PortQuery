@@ -7,20 +7,12 @@
 #include <optional>
 #include <functional>
 
-/*
-enum class TokenType {
-    // KEY WORDS
-    
-    ALL,
-    AND_BETWEEN,
-    AND_OP,
-    ANY,
+
+/* Other tokens that could be supported in the future
+
     AS,
     ASC,
-    BETWEEN,
-    BY,
     CASE,
-    COUNT,
     CROSS,
     DESC,
     DESCRIBE,  keep this? 
@@ -29,26 +21,14 @@ enum class TokenType {
     ELSE,
     ELSEIF,
     EXISTS,
-    FROM,
-    GROUP,
-    HAVING,
-    IF,
-    IN,
     INNER,
-    IS,
     JOIN,
     LEFT,
-    LIKE,
-    LIMIT,
     MATCH,
     NATURAL,
-    NOT,
     ON,
-    OR,
-    ORDER,
     OUTER,
     RIGHT,
-    SELECT,
     STRAIGHT_JOIN,  keep this too? 
     THEN,  keep conditionals 
     TO,
@@ -56,24 +36,7 @@ enum class TokenType {
     UNIQUE,
     USING,
     WHEN,
-    WHERE,
     WITH,
-
-    // SYMBOLS
-
-    SEMICOLON,
-    ASTERISK,
-    COMMA,
-    LEFT_PAREN,
-    RIGHT_PAREN,
-    GT,
-    GT_OR_EQ,
-    LT,
-    LT_OR_EQ,
-    EQ,
-    NOT_EQ,
-};
-
 */
 
 
@@ -81,6 +44,7 @@ enum class TokenType {
 enum class Keyword {
     ALL,
     AND_BETWEEN,
+    AND_OP,
     ANY,
     BETWEEN,
     COUNT,
@@ -173,7 +137,6 @@ class Lexer {
         // The public facing Lex function, first checks if a token has already been scanned 
         // By someone calling "Peek", if so returns that and clears the peek token. If not,
         // calls the internal scanNextToken function to get get an output
-
         Token nextToken();
 
         // Token peek();
@@ -199,8 +162,12 @@ class Lexer {
 
         // This method is transitioned to when a token begins with a comparison character (!, =, <, >)
         // Tokens that could be returned by this routine are: ComparisonTokens, ErrorTokens
-        
         Token scanComparisonToken();
+
+        // Some characters are not whitespace, but can also legitimately terminate a character
+        // Essentially this includes all the punctuation tokens. This could be expanded in the future to include
+        // comparison token characters
+        static bool isTokenTerminatingChar(const char c);
 
         // This query string represents the SQL query to be scanned
         std::string m_queryString;

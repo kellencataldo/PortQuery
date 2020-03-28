@@ -24,3 +24,15 @@ option(BUILD_TEST_BINARIES "Setting this will download and build the googletest 
 if (BUILD_TEST_BINARIES)
     add_subdirectory(tests)
 endif()
+
+set_source_files_properties(tags PROPERTIES GENERATED true)
+add_custom_target(tags
+    COMMAND ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+message(STATUS "SEARCHING FOR CTAGS")
+find_program(CTAGS_PATH ctags)
+if(CTAGS_PATH)
+    message(STATUS "FOUND CTAGS: ${CTAGS_PATH}. NOW GENERATING")
+    add_dependencies(portquery tags)
+endif(CTAGS_PATH)

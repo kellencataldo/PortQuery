@@ -25,6 +25,11 @@ Token Lexer::nextToken() {
 }
 
 
+bool Lexer::isTokenTerminatingChar(const char c) {
+
+}
+
+
 Token Lexer::scanErrorToken() {
     // Grab everything that isn't a white space character. This is considered the error lexeme;
     while(m_queryString.end() != ++m_currentChar && !std::isspace(*m_currentChar));
