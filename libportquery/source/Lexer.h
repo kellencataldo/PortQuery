@@ -134,6 +134,11 @@ struct EOFToken { };
 // This is distinctly separate from binary comparison tokens
 template <char> struct PunctuationToken { };
 
+// A special error token. When the Lexer encounters a lexeme that it cannot resolve, it stores the string 
+// in this special error token struct. It is up to the parser to decide what to do with it
+
+struct ErrorToken { std::string m_errorLexeme; };
+
 using Token = std::variant<
     KeywordToken,
     ColumnToken,
@@ -147,7 +152,9 @@ using Token = std::variant<
     PunctuationToken<'('>,
     PunctuationToken<')'>,
     PunctuationToken<','>,
-    PunctuationToken<';'>
+    PunctuationToken<';'>,
+
+    ErrorToken
     >;
 
 
@@ -172,6 +179,10 @@ class Lexer {
         // The function which holds the scanning logic, this can be called by both nextToken
         // and Peek
         Token scanNextToken();
+
+        // This method is transitioned to when no other routine can resolve a token. This routine
+        // Scans until the end of the unresolved token, and returns the lexeme to the caller
+        Token scanErrorToken();
         
         // This query string represents the SQL query to be scanned
         std::string m_queryString;

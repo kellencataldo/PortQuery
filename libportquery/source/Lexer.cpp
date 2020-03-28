@@ -9,7 +9,7 @@ Token Lexer::nextToken() {
     // This is an optimization for the scenario that the next token has been scanned and identified
     // but the input hasn't been advanced. This occurs when a token is "peeked"
 
-    // First, check to see if we have already parsed the next token, just not advanced the input
+    // First, check to see if the next token has already been peeked
     if (std::nullopt != m_peekToken) {
         // move the value that was in the peek token to the return token
         Token outToken(std::move(m_peekToken.value()));
@@ -24,6 +24,12 @@ Token Lexer::nextToken() {
     return scanNextToken();
 }
 
+Token Lexer::scanErrorToken() {
+    // Grab everything that isn't a white space character. This is considered the error lexeme;
+    while(m_queryString.end() != ++m_currentChar && !std::isspace(*m_currentChar));
+    return ErrorToken{std::string(m_tokenStart, m_currentChar)};
+}
+
 
 Token Lexer::scanNextToken() {
 
@@ -36,10 +42,9 @@ Token Lexer::scanNextToken() {
 
     // advance the character (it was stopped at the end of the last token)
     // and scan past any initial whitespace 
-    // @TODO: maybe make this cooler or something?
-    while(m_queryString.end() != ++m_currentChar && std::isspace(*m_currentChar)) { m_currentChar++; }
+    while(m_queryString.end() != ++m_currentChar && std::isspace(*m_currentChar));
 
-    // We have reached the end of our string, return the EOF token
+    // The end of the string has been reached, return the EOF token
     if (m_queryString.end() == m_currentChar) { return EOFToken{}; }
 
     // and now... the real fun begins.
@@ -52,8 +57,8 @@ Token Lexer::scanNextToken() {
         case ')': return PunctuationToken<')'>{};
         case ',': return PunctuationToken<','>{};
         case ';': return PunctuationToken<';'>{}; // return EOF here?
-        default: return EOFToken{};
     }
-
-    return EOFToken{};
+    // return handle error case.
+    
+    return scanErrorToken();
 }
