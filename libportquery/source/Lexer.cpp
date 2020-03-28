@@ -25,11 +25,6 @@ Token Lexer::nextToken() {
 }
 
 
-bool Lexer::isTokenTerminatingChar(const char c) {
-
-}
-
-
 Token Lexer::scanErrorToken() {
     // Grab everything that isn't a white space character. This is considered the error lexeme;
     while(m_queryString.end() != ++m_currentChar && !std::isspace(*m_currentChar));
@@ -49,6 +44,38 @@ Token Lexer::scanIntegerToken() {
 
 Token Lexer::scanComparisonToken() {
 
+    static std::map<std::string, std::function<uint16_t(const uint16_t, const uint16_t)>> operatorMap{
+        {"=" , [](const uint16_t a, const uint16_t b) { return a == b; } },
+        {">" , [](const uint16_t a, const uint16_t b) { return a >  b; } },
+        {"<" , [](const uint16_t a, const uint16_t b) { return a <  b; } },
+        {">=", [](const uint16_t a, const uint16_t b) { return a >= b; } },
+        {"<=", [](const uint16_t a, const uint16_t b) { return a <= b; } },
+        {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
+    };
+
+    // Scan forward one character
+    m_currentChar++;
+
+    // if the next char is a lexically valid, token terminating character, we know that the character we just 
+    // examined must be in the operatorMap, as we matched against it in the call to scanNextToken()
+    if (reachedTokenEnd(m_currentChar)) { 
+
+        // Backup by one character, and lookup that character in the map
+        // This little half step with string declaration is necessary because ALE kept losing its mind over all the 
+        // brace initialization or something.
+        std::string key{*(m_currentChar-1)}; 
+        return ComparisonToken{operatorMap[key]};
+
+    // Check if the next character is part of a valid comparison operator and past that is a valid
+    // token terminating character.
+    } else if (*m_currentChar == isCharAnyOf{'=', '>'} && reachedTokenEnd(++m_currentChar)) {
+
+        // Another note: don't check presense here, if this throws an access error, then the scanning logic is wrong,
+        // we should know exactly what we will find in the map when we go to lookup.
+        return ComparisonToken{operatorMap[std::string(m_tokenStart, m_currentChar)]};
+    }
+
+    return scanErrorToken();
 }
 
 
@@ -63,7 +90,9 @@ Token Lexer::scanNextToken() {
     }
 
     // advance the character (it was stopped at the end of the last token)
-    // and scan past any initial whitespace 
+    // and scan past any initial whitespace, using std::isspace instead of isspace because the standard library 
+    // handles locales
+    
     while(m_queryString.end() != m_currentChar && std::isspace(*m_currentChar)) { m_currentChar++; }
 
     // The end of the string has been reached, return the EOF token
@@ -72,7 +101,7 @@ Token Lexer::scanNextToken() {
     // and now... the real fun begins.
     // Set the token start to wherever the whitespace ended
     m_tokenStart = m_currentChar;
-
+    
     switch(*m_currentChar) {
         case '*': return PunctuationToken<'*'>{};
         case '(': return PunctuationToken<'('>{};
@@ -80,7 +109,16 @@ Token Lexer::scanNextToken() {
         case ',': return PunctuationToken<','>{};
         case ';': return PunctuationToken<';'>{}; // return EOF here? this isn't being handled correctly.
     }
-    // return handle error case.
+   
+
+    // next, lets try scanning some comparison operators
+    if (*m_currentChar == isCharAnyOf{'=', '>', '<'}) {
+        // The next character is potentially the beginning of a comparison operator
+        return scanComparisonToken();
+    }
+
+
     
+    // nothing else matches, return error case.
     return scanErrorToken();
 }

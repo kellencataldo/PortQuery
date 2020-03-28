@@ -6,6 +6,7 @@
 #include <variant>
 #include <optional>
 #include <functional>
+#include <algorithm>
 
 
 /* Other tokens that could be supported in the future
@@ -38,6 +39,25 @@
     WHEN,
     WITH,
 */
+
+
+// Handy little helper class which performs a comparison on a collection of objects of varying lengths. 
+// Used mostly when comparing a single char against a collection of characters to determine how to scan a 
+// certain token. For example: if (someChar == isCharAnyOf{'<', '>', '='}) parse it as a comparison operator
+
+// Inherit from vector so we get not only the collection, but also the convenient constructors that come with it.
+// Note the wierd syntax in the example above, this is because you are looking a braces initialized constructor
+struct isCharAnyOf : private std::vector<char> {
+    using std::vector<char>::vector;
+    bool operator==(const char& c) const {
+        // Upcast to so that we can perform std::any_of on our vector
+        const std::vector<char>& collection = static_cast<const std::vector<char>&>(*this);
+        return std::any_of(collection.cbegin(), collection.cend(), [&c](const char& other) {return c == other;});
+    }
+
+    // Add this is so we can support both comparisons from both sides
+    friend bool operator==(const char& c, const isCharAnyOf rhs) { return rhs == c; }
+};
 
 
 // Enum of all supported keywords
@@ -167,7 +187,11 @@ class Lexer {
         // Some characters are not whitespace, but can also legitimately terminate a character
         // Essentially this includes all the punctuation tokens. This could be expanded in the future to include
         // comparison token characters
-        static bool isTokenTerminatingChar(const char c);
+        bool reachedTokenEnd(const std::string::const_iterator i) {
+
+            // All of these are for checks that a token can be legitimately terminated
+            return m_queryString.end() == i || std::isspace(*i) || *i == isCharAnyOf{'*', '(', ')', ',', ';'};
+        }
 
         // This query string represents the SQL query to be scanned
         std::string m_queryString;
