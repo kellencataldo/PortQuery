@@ -161,9 +161,13 @@ using Token = std::variant<
 class Lexer { 
     public:
         Lexer(const std::string queryString) : m_queryString{std::move(queryString)} {
+            if (m_queryString.empty()) {
+                // @TODO: possibly just return an EOF on empty strings?
+                throw std::invalid_argument("Lexer cannot operate on an empty string");
+            }
+
             m_tokenStart = m_queryString.cbegin();
             m_currentChar = m_queryString.cbegin();
-        
         }
 
         // The public facing Lex function, first checks if a token has already been scanned 
@@ -183,7 +187,21 @@ class Lexer {
         // This method is transitioned to when no other routine can resolve a token. This routine
         // Scans until the end of the unresolved token, and returns the lexeme to the caller
         Token scanErrorToken();
+
+        // This method is transitioned to when a token begins with an alphabetical character.
+        // Tokens that could be returned by this routine are: KeywordTokens, ColumnTokens, URLSTokens, ErrorTokens
+        // In the future this is where user variables would be parsed from. (not supported now lol)
+        Token scanAlphaToken();
+
+        // This method is transitioned to when a token begins with a numeric character.
+        // Tokens that could be returned by this routine are: NumericTokens, possibly URLTokens, and ErrorTokens
+        Token scanIntegerToken();
+
+        // This method is transitioned to when a token begins with a comparison character (!, =, <, >)
+        // Tokens that could be returned by this routine are: ComparisonTokens, ErrorTokens
         
+        Token scanComparisonToken();
+
         // This query string represents the SQL query to be scanned
         std::string m_queryString;
 

@@ -24,6 +24,7 @@ Token Lexer::nextToken() {
     return scanNextToken();
 }
 
+
 Token Lexer::scanErrorToken() {
     // Grab everything that isn't a white space character. This is considered the error lexeme;
     while(m_queryString.end() != ++m_currentChar && !std::isspace(*m_currentChar));
@@ -31,10 +32,26 @@ Token Lexer::scanErrorToken() {
 }
 
 
+Token Lexer::scanAlphaToken() {
+
+}
+
+
+Token Lexer::scanIntegerToken() {
+
+}
+
+
+Token Lexer::scanComparisonToken() {
+
+}
+
+
 Token Lexer::scanNextToken() {
 
     // If m_currentChar is set to the EOF has already been returned, 
     // throw an error in the event that scan is called again
+    // @TODO: possibly change this logic? maybe just keep returning EOF's?
     if (m_queryString.end() == m_currentChar) {
         // out of range error is used here, but logic error would serve just as well
         throw std::out_of_range("Cannot scan past EOF token");
@@ -42,7 +59,7 @@ Token Lexer::scanNextToken() {
 
     // advance the character (it was stopped at the end of the last token)
     // and scan past any initial whitespace 
-    while(m_queryString.end() != ++m_currentChar && std::isspace(*m_currentChar));
+    while(m_queryString.end() != m_currentChar && std::isspace(*m_currentChar)) { m_currentChar++; }
 
     // The end of the string has been reached, return the EOF token
     if (m_queryString.end() == m_currentChar) { return EOFToken{}; }
@@ -56,7 +73,7 @@ Token Lexer::scanNextToken() {
         case '(': return PunctuationToken<'('>{};
         case ')': return PunctuationToken<')'>{};
         case ',': return PunctuationToken<','>{};
-        case ';': return PunctuationToken<';'>{}; // return EOF here?
+        case ';': return PunctuationToken<';'>{}; // return EOF here? this isn't being handled correctly.
     }
     // return handle error case.
     
