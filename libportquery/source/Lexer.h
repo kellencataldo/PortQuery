@@ -159,9 +159,19 @@ class Lexer {
         
         }
 
+        // The public facing Lex function, first checks if a token has already been scanned 
+        // By someone calling "Peek", if so returns that and clears the peek token. If not,
+        // calls the internal scanNextToken function to get get an output
+
         Token nextToken();
 
+        // Token peek();
+
     private:
+
+        // The function which holds the scanning logic, this can be called by both nextToken
+        // and Peek
+        Token scanNextToken();
         
         // This query string represents the SQL query to be scanned
         std::string m_queryString;
