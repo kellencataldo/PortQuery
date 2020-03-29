@@ -173,11 +173,15 @@ class Lexer {
 
         // This method is transitioned to when a token begins with a numeric character.
         // Tokens that could be returned by this routine are: NumericTokens, possibly URLTokens, and ErrorTokens
-        Token scanIntegerToken();
+        Token scanNumericToken();
 
         // This method is transitioned to when a token begins with a comparison character (!, =, <, >)
         // Tokens that could be returned by this routine are: ComparisonTokens, ErrorTokens
         Token scanComparisonToken();
+
+        // This method is transitioned to when a potential URL has been spotted. URL's are VERY hard to match
+        // against, so this can be transitioned to from both scanAlphaToken and scanNumericToken routines
+        Token scanURLToken();
 
         // Some characters are not whitespace, but can also legitimately terminate a character
         // Essentially this includes all the punctuation tokens. This could be expanded in the future to include
@@ -185,8 +189,8 @@ class Lexer {
         bool reachedTokenEnd() const {
 
             // All of these are for checks that a token can be legitimately terminated
-            const std::string::const_iterator i = m_currentChar + 1;
-            return m_queryString.end() == i || std::isspace(*i) || *i == isCharAnyOf{'*', '(', ')', ',', ';'};
+            return m_queryString.end() == m_currentChar || std::isspace(*m_currentChar) || 
+                *m_currentChar == isCharAnyOf{'*', '(', ')', ',', ';'};
         }
 
         // This query string represents the SQL query to be scanned

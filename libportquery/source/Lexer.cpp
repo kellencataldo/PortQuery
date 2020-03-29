@@ -1,5 +1,6 @@
 #include <exception>
 #include <cctype>
+#include <sstream>
 
 #include "Lexer.h"
 
@@ -30,17 +31,57 @@ Token Lexer::scanErrorToken() {
     // This method assumes that the caller detected an invalid character somewhere and m_currentChar
     // is NOT pointing at the end of the query string
     while(!reachedTokenEnd()) { m_currentChar++; };
-    return ErrorToken{std::string(m_tokenStart, ++m_currentChar)};
+    return ErrorToken{std::string(m_tokenStart, m_currentChar)};
+}
+
+
+Token Lexer::scanURLToken() {
+
+    return scanErrorToken();
 }
 
 
 Token Lexer::scanAlphaToken() {
 
+    return scanErrorToken();
 }
 
 
-Token Lexer::scanIntegerToken() {
+Token Lexer::scanNumericToken() {
 
+    // Increment the current character and start scanning until we encournter either the end of the token
+    // or some character that is not a digit
+    while (m_queryString.end() != ++m_currentChar && std::isdigit(*m_currentChar));
+
+    // If we stopped at the end of the token, this is an integer value
+    if (reachedTokenEnd()) {
+
+        // there is no stous method in c or c++ so this little half step method is necessary because 
+        // I don't want to have to deal with either exceptions or truncations
+        
+        const std::string potentialNumeric(m_tokenStart, m_currentChar);
+        uint16_t conversionDest(0);
+        std::stringstream conversionStream(potentialNumeric);
+        if(conversionStream >> conversionDest && conversionStream.good()) {
+
+            // We have successfully converted the token
+            return NumericToken{conversionDest};
+        }
+
+        // Fall through error path, this could happen if we attempt to convert a number which gets truncted
+        return ErrorToken{potentialNumeric};
+    }
+
+    // This could potentially be a URL token if a dot separater is encountered, hand things off to the 
+    // scanURLToken method. Note: This is a safe dereference bceause we already know m_currentChar is not at
+    // m_queryString.end() because of hte call to reachedTokenEnd()
+    else if ('.' == *m_currentChar) {
+
+        return scanURLToken();
+    }
+
+    return scanErrorToken();
+    
 }
 
 
@@ -55,10 +96,12 @@ Token Lexer::scanComparisonToken() {
         {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
     };
 
-    // Check to see if we possibly have a two character comparison token, if not, it won't be present in our map
-    if(reachedTokenEnd() || (*(++m_currentChar) == isCharAnyOf{'=', '>'} && reachedTokenEnd())) {
+    m_currentChar++;
+    // Scan forwards one character and check to see if we have reached the end of our token. Also
+    // check to see if we possibly have a two character comparison token, if not, it won't be present in our map
+    if(reachedTokenEnd() || (*(m_currentChar++) == isCharAnyOf{'=', '>'} && reachedTokenEnd())) {
         // We have found something that looks like a key
-        std::string key(m_tokenStart, ++m_currentChar);
+        std::string key(m_tokenStart, m_currentChar);
         // if it is present in the map, we have found the operator token
         if (operatorMap.end() != operatorMap.find(key)) {
             // if not, fall through and scan whatever we found as an error token
@@ -88,6 +131,7 @@ Token Lexer::scanNextToken() {
     // Set the token start to wherever the whitespace ended
     m_tokenStart = m_currentChar;
     
+    // Check to see if we have any punctuation tokens first.
     switch(*m_currentChar) {
         case '*': return PunctuationToken<'*'>{};
         case '(': return PunctuationToken<'('>{};
@@ -103,7 +147,18 @@ Token Lexer::scanNextToken() {
         return scanComparisonToken();
     }
 
+    // next, is this a digit
+    else if (std::isdigit(*m_currentChar)) {
+        // this could return a number, an error token, or a URL possibly
+        return scanNumericToken();
+    }
 
+    // next is this a letter
+    else if (std::isalpha(*m_currentChar)) {
+        // this could return a keyword, a column, a URL, or an error token
+        return scanAlphaToken();
+    }
+    //
     
     // nothing else matches, return error case.
     return scanErrorToken();
