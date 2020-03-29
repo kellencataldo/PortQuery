@@ -145,11 +145,6 @@ using Token = std::variant<
 class Lexer { 
     public:
         Lexer(const std::string queryString) : m_queryString{std::move(queryString)} {
-            if (m_queryString.empty()) {
-                // @TODO: possibly just return an EOF on empty strings?
-                throw std::invalid_argument("Lexer cannot operate on an empty string");
-            }
-
             m_tokenStart = m_queryString.cbegin();
             m_currentChar = m_queryString.cbegin();
         }
@@ -187,9 +182,10 @@ class Lexer {
         // Some characters are not whitespace, but can also legitimately terminate a character
         // Essentially this includes all the punctuation tokens. This could be expanded in the future to include
         // comparison token characters
-        bool reachedTokenEnd(const std::string::const_iterator i) {
+        bool reachedTokenEnd() const {
 
             // All of these are for checks that a token can be legitimately terminated
+            const std::string::const_iterator i = m_currentChar + 1;
             return m_queryString.end() == i || std::isspace(*i) || *i == isCharAnyOf{'*', '(', ')', ',', ';'};
         }
 
@@ -202,6 +198,10 @@ class Lexer {
         // makes sense when followed by the keyword BY. This context can be necessary sometimes
         std::optional<Token> m_peekToken;
 
+        // Iterators are used here out of convenience, when generating a string using two iterators, the character
+        // pointed at by the terminating iterator is not included, so therefore, you can increment that forward  
+        // iterator, create a substring of the previous lexeme, and have the forward iterator be prepared to scan the 
+        // next token all in one go.
         std::string::const_iterator m_tokenStart;
         std::string::const_iterator m_currentChar;
 };

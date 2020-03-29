@@ -29,8 +29,8 @@ Token Lexer::scanErrorToken() {
     // Grab everything that isn't a white space character. This is considered the error lexeme;
     // This method assumes that the caller detected an invalid character somewhere and m_currentChar
     // is NOT pointing at the end of the query string
-    while(!reachedTokenEnd(++m_currentChar));
-    return ErrorToken{std::string(m_tokenStart, m_currentChar)};
+    while(!reachedTokenEnd()) { m_currentChar++; };
+    return ErrorToken{std::string(m_tokenStart, ++m_currentChar)};
 }
 
 
@@ -55,45 +55,27 @@ Token Lexer::scanComparisonToken() {
         {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
     };
 
-    // Scan forward one character
-    m_currentChar++;
+    // This is super hacky and innefficient (lol), start by scanning to the end of the potential token
+    while (!reachedTokenEnd()) { m_currentChar++; };
+    
+    // use whatever this token is as a key to check if it is present in the operatorMap
+    std::string key(m_tokenStart, ++m_currentChar);
+    if(operatorMap.end() != operatorMap.find(key)) {
 
-    // if the next char is a lexically valid, token terminating character, we know that the character we just 
-    // examined must be in the operatorMap, as we matched against it in the call to scanNextToken()
-    if (reachedTokenEnd(m_currentChar)) { 
-
-        // Backup by one character, and lookup that character in the map
-        // This little half step with string declaration is necessary because ALE kept losing its mind over all the 
-        // brace initialization or something.
-        std::string key{*(m_currentChar-1)}; 
+        // If they key is present, construct a ComparisonToken and return that
         return ComparisonToken{operatorMap[key]};
-
-    // Check if the next character is part of a valid comparison operator and past that is a valid
-    // token terminating character.
-    } else if (*m_currentChar == isCharAnyOf{'=', '>'} && reachedTokenEnd(++m_currentChar)) {
-
-        // Another note: don't check presense here, if this throws an access error, then the scanning logic is wrong,
-        // we should know exactly what we will find in the map when we go to lookup.
-        return ComparisonToken{operatorMap[std::string(m_tokenStart, m_currentChar)]};
     }
 
-    return scanErrorToken();
+    // If the key is not present, return whatever hte heck was scanned as an error token. 
+    // Two birds with one stone I guess.
+    return ErrorToken{key};
 }
 
 
 Token Lexer::scanNextToken() {
 
-    // If m_currentChar is set to the EOF has already been returned, 
-    // throw an error in the event that scan is called again
-    // @TODO: possibly change this logic? maybe just keep returning EOF's?
-    if (m_queryString.end() == m_currentChar) {
-        // out of range error is used here, but logic error would serve just as well
-        throw std::out_of_range("Cannot scan past EOF token");
-    }
-
-    // advance the character (it was stopped at the end of the last token)
-    // and scan past any initial whitespace, using std::isspace instead of isspace because the standard library 
-    // handles locales
+    // The assumption here is that the next time this is called, it will be either at the start of the string,
+    // or one character past the termination of the last token.
     
     while(m_queryString.end() != m_currentChar && std::isspace(*m_currentChar)) { m_currentChar++; }
 

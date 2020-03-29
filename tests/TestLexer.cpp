@@ -12,8 +12,6 @@ TEST(RecognizeTokens, EOFTokens) {
     ASSERT_FALSE(std::holds_alternative<EOFToken>(lexer_T2.nextToken()));
     // Second call to nextToken should be EOF token
     ASSERT_TRUE(std::holds_alternative<EOFToken>(lexer_T2.nextToken()));
-    // Parsing past the first recieved EOF should throw an error
-    EXPECT_THROW(lexer_T2.nextToken(), std::out_of_range);
 }
 
 
@@ -58,13 +56,66 @@ TEST(RecognizeTokens, ErrorTokens) {
     EXPECT_STREQ("!==", error_T5.m_errorLexeme.c_str());
 
     // after all these errors we still recognize a valid token
-    Token token_T6{lexer_T1.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
+//    Token token_T6{lexer_T1.nextToken()};
+ //   ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
 
-    KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
-    EXPECT_TRUE(Keyword::SELECT == keyword_T6.m_keyword);
+ //   KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
+  //  EXPECT_TRUE(Keyword::SELECT == keyword_T6.m_keyword);
+
+    // And last but not least is the EOF token
+    lexer_T1.nextToken();
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(lexer_T1.nextToken()));
+}
+
+
+TEST(RecognizeTokens, ComparisonTokens) {
+
+    Lexer lexer_T1{"= > < >= <= <>       == >< => =< << >>"};
+    
+    Token token_T1{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T1));
+    ComparisonToken comparison_T1 = std::get<ComparisonToken>(token_T1);
+    EXPECT_TRUE(comparison_T1.m_compareFunc(1, 1));
+
+    Token token_T2{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T2));
+    ComparisonToken comparison_T2 = std::get<ComparisonToken>(token_T2);
+    EXPECT_TRUE(comparison_T2.m_compareFunc(2, 1));
+
+    Token token_T3{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T3));
+    ComparisonToken comparison_T3 = std::get<ComparisonToken>(token_T3);
+    EXPECT_TRUE(comparison_T3.m_compareFunc(1, 2));
+
+    Token token_T4{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T4));
+    ComparisonToken comparison_T4 = std::get<ComparisonToken>(token_T4);
+    EXPECT_TRUE(comparison_T4.m_compareFunc(2, 1));
+    EXPECT_TRUE(comparison_T4.m_compareFunc(1, 1));
+
+    Token token_T5{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T5));
+    ComparisonToken comparison_T5 = std::get<ComparisonToken>(token_T5);
+    EXPECT_TRUE(comparison_T5.m_compareFunc(1, 2));
+    EXPECT_TRUE(comparison_T5.m_compareFunc(1, 1));
+
+    Token token_T6{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T6));
+    ComparisonToken comparison_T6 = std::get<ComparisonToken>(token_T6);
+    EXPECT_TRUE(comparison_T6.m_compareFunc(2, 1));
+
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(lexer_T1.nextToken()));
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(lexer_T1.nextToken()));
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(lexer_T1.nextToken()));
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(lexer_T1.nextToken()));
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(lexer_T1.nextToken()));
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(lexer_T1.nextToken()));
 
     // And last but not least is the EOF token
     ASSERT_TRUE(std::holds_alternative<EOFToken>(lexer_T1.nextToken()));
- 
 }
+
+
+
+
+
