@@ -55,20 +55,22 @@ Token Lexer::scanComparisonToken() {
         {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
     };
 
-    // This is super hacky and innefficient (lol), start by scanning to the end of the potential token
-    while (!reachedTokenEnd()) { m_currentChar++; };
-    
-    // use whatever this token is as a key to check if it is present in the operatorMap
-    std::string key(m_tokenStart, ++m_currentChar);
-    if(operatorMap.end() != operatorMap.find(key)) {
+    // Check to see if we possibly have a two character comparison token, if not, it won't be present in our map
+    if(reachedTokenEnd() || (*(++m_currentChar) == isCharAnyOf{'=', '>'} && reachedTokenEnd())) {
+        // We have found something that looks like a key
+        std::string key(m_tokenStart, ++m_currentChar);
+        // if it is present in the map, we have found the operator token
+        if (operatorMap.end() != operatorMap.find(key)) {
+            // if not, fall through and scan whatever we found as an error token
+            return ComparisonToken{operatorMap[key]};
+        }
 
-        // If they key is present, construct a ComparisonToken and return that
-        return ComparisonToken{operatorMap[key]};
+        // if it is not in the map, then its a malformed comparison token
+        return ErrorToken{key};
     }
 
-    // If the key is not present, return whatever hte heck was scanned as an error token. 
-    // Two birds with one stone I guess.
-    return ErrorToken{key};
+    // Keep scanning whatever we found as an error token
+    return scanErrorToken();
 }
 
 
