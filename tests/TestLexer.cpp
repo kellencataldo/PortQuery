@@ -128,6 +128,56 @@ TEST(RecognizeTokens, ComparisonTokens) {
 }
 
 
+TEST(RecognizeTokens, NumericTokens) {
+
+    Lexer lexer_T1{"1 12 345 06789 65535     12345A 0x123 123.456 12A34 -1 65536"};
+    
+    Token token_T1{lexer_T1.nextToken()}; // 1
+    ASSERT_TRUE(std::holds_alternative<NumericToken>(token_T1));
+    NumericToken numeric_T1 = std::get<NumericToken>(token_T1);
+    EXPECT_TRUE(1 == numeric_T1.m_value);
+
+    Token token_T2{lexer_T1.nextToken()}; // 12
+    ASSERT_TRUE(std::holds_alternative<NumericToken>(token_T2));
+    NumericToken numeric_T2 = std::get<NumericToken>(token_T2);
+    EXPECT_TRUE(12 == numeric_T2.m_value);
 
 
+    Token token_T3{lexer_T1.nextToken()}; // 345
+    ASSERT_TRUE(std::holds_alternative<NumericToken>(token_T3));
+    NumericToken numeric_T3 = std::get<NumericToken>(token_T3);
+    EXPECT_TRUE(345 == numeric_T3.m_value);
 
+
+    Token token_T4{lexer_T1.nextToken()}; // 06789 
+    ASSERT_TRUE(std::holds_alternative<NumericToken>(token_T4));
+    NumericToken numeric_T4 = std::get<NumericToken>(token_T4);
+    EXPECT_TRUE(6789 == numeric_T4.m_value);
+
+    Token token_T5{lexer_T1.nextToken()}; // 65535
+    ASSERT_TRUE(std::holds_alternative<NumericToken>(token_T5));
+    NumericToken numeric_T5 = std::get<NumericToken>(token_T5);
+    EXPECT_TRUE(65535 == numeric_T5.m_value);
+
+    Token token_T6{lexer_T1.nextToken()}; // 12345A
+    EXPECT_FALSE(std::holds_alternative<NumericToken>(token_T6));
+
+    Token token_T7{lexer_T1.nextToken()}; // 0x123
+    ASSERT_FALSE(std::holds_alternative<NumericToken>(token_T7));
+
+    Token token_T8{lexer_T1.nextToken()}; // 123.456
+    ASSERT_FALSE(std::holds_alternative<NumericToken>(token_T8));
+
+    Token token_T9{lexer_T1.nextToken()}; // 12A34
+    ASSERT_FALSE(std::holds_alternative<NumericToken>(token_T9));
+
+    Token token_T10{lexer_T1.nextToken()}; // -1
+    ASSERT_FALSE(std::holds_alternative<NumericToken>(token_T10));
+
+    Token token_T11{lexer_T1.nextToken()}; // 65536
+    ASSERT_FALSE(std::holds_alternative<NumericToken>(token_T11));
+    // And last but not least is the EOF token
+    //
+    Token token_T13{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T13));
+}

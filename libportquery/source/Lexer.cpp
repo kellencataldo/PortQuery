@@ -62,7 +62,7 @@ Token Lexer::scanNumericToken() {
         const std::string potentialNumeric(m_tokenStart, m_currentChar);
         uint16_t conversionDest(0);
         std::stringstream conversionStream(potentialNumeric);
-        if(conversionStream >> conversionDest && conversionStream.good()) {
+        if(conversionStream >> conversionDest && !conversionStream.fail()) {
 
             // We have successfully converted the token
             return NumericToken{conversionDest};
