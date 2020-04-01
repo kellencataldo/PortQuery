@@ -43,6 +43,54 @@ Token Lexer::scanURLToken() {
 
 Token Lexer::scanAlphaToken() {
 
+    // Scan everything until we reach something that is not an alphabetical character or we have
+    // reached the end of the token
+    while (m_queryString.end() != ++m_currentChar && std::isalpha(*m_currentChar));
+
+    // If we stopped at the end of the token, check if this is a keyword
+    if (reachedTokenEnd()) {
+
+        static const std::map<std::string, KeywordToken::Keyword> keywordMap{ 
+            {"ALL",     KeywordToken::ALL},
+            {"AND",     KeywordToken::AND},
+            {"ANY",     KeywordToken::ANY},
+            {"BETWEEN", KeywordToken::BETWEEN},
+            {"COUNT",   KeywordToken::COUNT},
+            {"FROM",    KeywordToken::FROM},
+            {"IF",      KeywordToken::IF},
+            {"IN",      KeywordToken::IN},
+            {"IS",      KeywordToken::IS},
+            {"LIKE",    KeywordToken::LIKE},
+            {"LIMIT",   KeywordToken::LIMIT},
+            {"NOT",     KeywordToken::NOT},
+            {"OR",      KeywordToken::OR},
+            {"ORDER",   KeywordToken::ORDER},
+            {"SELECT",  KeywordToken::SELECT},
+            {"WHERE",   KeywordToken::WHERE},
+            {"PORT",    KeywordToken::PORT},
+            {"TCP",     KeywordToken::TCP},
+            {"UDP",     KeywordToken::UDP}
+        };
+       
+        // Check to see if we have a mapping to a keyword token
+        std::string key(m_tokenStart, m_currentChar);
+        auto keywordMapIter = keywordMap.find(key);
+        if (keywordMap.end() != keywordMapIter) {
+            // if not, fall through and scan whatever we found as an error token
+            return KeywordToken{keywordMapIter->second};
+        }
+
+        // if it is not in the map, then its a malformed comparison token
+        return ErrorToken{key};
+    } 
+    // Check to see if we can transition to a URL token
+    // is there a better heuristic? almost certainly.
+    else if (*m_currentChar == isCharAnyOf{':', '/', '.', '@', '-', '?', '=', '&', '+', ';', '$', '#'}) { 
+
+        // this miiiiiight be a URL token
+        return scanURLToken();
+    }
+
     return scanErrorToken();
 }
 
@@ -87,25 +135,29 @@ Token Lexer::scanNumericToken() {
 
 Token Lexer::scanComparisonToken() {
 
-    static std::map<std::string, std::function<uint16_t(const uint16_t, const uint16_t)>> operatorMap{
-        {"=" , [](const uint16_t a, const uint16_t b) { return a == b; } },
-        {">" , [](const uint16_t a, const uint16_t b) { return a >  b; } },
-        {"<" , [](const uint16_t a, const uint16_t b) { return a <  b; } },
-        {">=", [](const uint16_t a, const uint16_t b) { return a >= b; } },
-        {"<=", [](const uint16_t a, const uint16_t b) { return a <= b; } },
-        {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
-    };
-
-    m_currentChar++;
     // Scan forwards one character and check to see if we have reached the end of our token. Also
     // check to see if we possibly have a two character comparison token, if not, it won't be present in our map
+    m_currentChar++;
     if(reachedTokenEnd() || (*(m_currentChar++) == isCharAnyOf{'=', '>'} && reachedTokenEnd())) {
+
+        static std::map<std::string, std::function<uint16_t(const uint16_t, const uint16_t)>> operatorMap{
+            {"=" , [](const uint16_t a, const uint16_t b) { return a == b; } },
+            {">" , [](const uint16_t a, const uint16_t b) { return a >  b; } },
+            {"<" , [](const uint16_t a, const uint16_t b) { return a <  b; } },
+            {">=", [](const uint16_t a, const uint16_t b) { return a >= b; } },
+            {"<=", [](const uint16_t a, const uint16_t b) { return a <= b; } },
+            {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
+        };
+
+
         // We have found something that looks like a key
         std::string key(m_tokenStart, m_currentChar);
+
+        auto operatorMapIter = operatorMap.find(key);
         // if it is present in the map, we have found the operator token
-        if (operatorMap.end() != operatorMap.find(key)) {
+        if (operatorMap.end() != operatorMapIter) {
             // if not, fall through and scan whatever we found as an error token
-            return ComparisonToken{operatorMap[key]};
+            return ComparisonToken{operatorMapIter->second};
         }
 
         // if it is not in the map, then its a malformed comparison token

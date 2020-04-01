@@ -176,8 +176,8 @@ TEST(RecognizeTokens, NumericTokens) {
 
     Token token_T11{lexer_T1.nextToken()}; // 65536
     ASSERT_FALSE(std::holds_alternative<NumericToken>(token_T11));
+
     // And last but not least is the EOF token
-    //
     Token token_T13{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T13));
 }

@@ -60,11 +60,16 @@ struct isCharAnyOf : private std::vector<char> {
 };
 
 
-// Enum of all supported keywords
-enum class Keyword {
+// This token represents all keywords from the above enum.
+// No other information except which keyword is needed
+struct KeywordToken { 
+
+    // Enum of all supported keywords
+    enum Keyword {
+
+    // SQL Keywords
     ALL,
-    AND_BETWEEN,
-    AND_OP,
+    AND,
     ANY,
     BETWEEN,
     COUNT,
@@ -81,22 +86,16 @@ enum class Keyword {
     ORDER,
     SELECT,
     WHERE,
-};
 
-// This token represents all keywords from the above enum.
-// No other information except which keyword is needed
-struct KeywordToken { Keyword m_keyword; };
-
-enum class Column {
+    // These are columns names. In the future, this could possibly be broken off into its own class
     PORT,
     TCP,
     UDP
+    };
+    
+    Keyword m_keyword; 
 };
 
-// This token represents the names of all the columes that can be queried.
-// Maybe this could change or be expanded in the future to be more dynamic, but for right now
-// this is as future proof as it gets.
-struct ColumnToken { Column m_column; };
 
 // This token represents any numeric value.
 // For right now, only values which can be stored in an unsigned short
@@ -125,7 +124,6 @@ struct ErrorToken { std::string m_errorLexeme; };
 
 using Token = std::variant<
     KeywordToken,
-    ColumnToken,
     NumericToken,
     ComparisonToken,
     URLToken,
@@ -138,13 +136,14 @@ using Token = std::variant<
     PunctuationToken<','>,
     PunctuationToken<';'>,
 
-    ErrorToken
-    >;
+    // token for when nothing else matches
+    ErrorToken>;
 
 
 class Lexer { 
     public:
         Lexer(const std::string queryString) : m_queryString{std::move(queryString)} {
+            std::for_each(m_queryString.begin(), m_queryString.end(), toupper);
             m_tokenStart = m_queryString.cbegin();
             m_currentChar = m_queryString.cbegin();
         }
@@ -209,3 +208,4 @@ class Lexer {
         std::string::const_iterator m_tokenStart;
         std::string::const_iterator m_currentChar;
 };
+
