@@ -67,35 +67,38 @@ struct KeywordToken {
     // Enum of all supported keywords
     enum Keyword {
 
-    // SQL Keywords
-    ALL,
-    AND,
-    ANY,
-    BETWEEN,
-    COUNT,
-    FROM,
-    // GROUP_BY,
-    // HAVING,
-    IF,
-    IN,
-    IS,
-    LIKE,
-    LIMIT,
-    NOT,
-    OR,
-    ORDER,
-    SELECT,
-    WHERE,
+        // SQL Keywords
+        ALL,
+        AND,
+        ANY,
+        BETWEEN,
+        COUNT,
+        FROM,
+        // GROUP_BY,
+        // HAVING,
+        IF,
+        IN,
+        IS,
+        LIKE,
+        LIMIT,
+        NOT,
+        OR,
+        ORDER,
+        SELECT,
+        WHERE,
 
-    // These are columns names. In the future, this could possibly be broken off into its own class
-    PORT,
-    TCP,
-    UDP
+        // These are columns names. In the future, this could possibly be broken off into its own class
+        PORT,
+        TCP,
+        UDP
     };
     
     Keyword m_keyword; 
 };
 
+enum f {a,b,c};
+
+template <f> struct ftok { };
 
 // This token represents any numeric value.
 // For right now, only values which can be stored in an unsigned short
@@ -135,6 +138,7 @@ using Token = std::variant<
     PunctuationToken<')'>,
     PunctuationToken<','>,
     PunctuationToken<';'>,
+    ftok<a>,
 
     // token for when nothing else matches
     ErrorToken>;
