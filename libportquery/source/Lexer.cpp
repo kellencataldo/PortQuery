@@ -1,6 +1,7 @@
 #include <exception>
 #include <cctype>
 #include <sstream>
+#include <regex>
 
 #include "Lexer.h"
 
@@ -36,7 +37,11 @@ Token Lexer::scanErrorToken() {
 
 
 Token Lexer::scanURLToken() {
-
+    // Very similar to scan URL token, except we attempt to match it against a URL at the end
+    
+    while(!reachedTokenEnd()) { m_currentChar++; };
+    std::string potentialURL(m_tokenStart, m_currentChar);
+    std::regex url_regex(R"(^(([^:\/?#]+):)?(//([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)", std::regex::extended);
     return scanErrorToken();
 }
 
