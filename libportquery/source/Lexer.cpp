@@ -1,9 +1,9 @@
 #include <exception>
 #include <cctype>
 #include <sstream>
-#include <regex>
 
 #include "Lexer.h"
+#include "Network.h"
 
 
 Token Lexer::nextToken() {
@@ -37,12 +37,20 @@ Token Lexer::scanErrorToken() {
 
 
 Token Lexer::scanURLToken() {
-    // Very similar to scan URL token, except we attempt to match it against a URL at the end
-    
+
+    // Very similar to scan error Token, except we first check to see if it can be converted to a binary address
+    // first grab everything
     while(!reachedTokenEnd()) { m_currentChar++; };
     std::string potentialURL(m_tokenStart, m_currentChar);
-    std::regex url_regex(R"(^(([^:\/?#]+):)?(//([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)", std::regex::extended);
-    return scanErrorToken();
+
+    // Check with the network interface if it can be converted to a URL
+    if(Network::isValidAddress(potentialURL)) {
+        // success path, reutnr a valid URL token
+        return URLToken{potentialURL};
+    }
+
+    // failure path, this is an error token
+    return ErrorToken{potentialURL};
 }
 
 

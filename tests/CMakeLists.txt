@@ -13,6 +13,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src ${CMAKE_CURRENT_BINARY_DIR}/googletest-build EXCLUDE_FROM_ALL)
 add_executable(tests 
     ${CMAKE_SOURCE_DIR}/libportquery/source/Lexer.cpp
+    ${CMAKE_SOURCE_DIR}/libportquery/source/Network.cpp
     TestArgumentParser.cpp
     TestLexer.cpp
     )

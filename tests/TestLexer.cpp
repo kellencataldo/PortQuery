@@ -56,11 +56,10 @@ TEST(RecognizeTokens, ErrorTokens) {
     EXPECT_STREQ("!==", error_T5.m_errorLexeme.c_str());
 
     // after all these errors we still recognize a valid token
-//    Token token_T6{lexer_T1.nextToken()};
- //   ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
-
- //   KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
-  //  EXPECT_TRUE(Keyword::SELECT == keyword_T6.m_keyword);
+    Token token_T6{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
+    KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
+    EXPECT_TRUE(KeywordToken::SELECT == keyword_T6.m_keyword);
 
     // And last but not least is the EOF token
     lexer_T1.nextToken();
