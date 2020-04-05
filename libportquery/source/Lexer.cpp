@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "Lexer.h"
-#include "Network.h"
 
 
 Token Lexer::nextToken() {
@@ -40,17 +39,17 @@ Token Lexer::scanURLToken() {
 
     // Very similar to scan error Token, except we first check to see if it can be converted to a binary address
     // first grab everything
-    while(!reachedTokenEnd()) { m_currentChar++; };
-    std::string potentialURL(m_tokenStart, m_currentChar);
+    while(m_queryString.end() != ++m_currentChar && isValidURLCharacter(*m_currentChar));
 
-    // Check with the network interface if it can be converted to a URL
-    if(Network::isValidAddress(potentialURL)) {
-        // success path, reutnr a valid URL token
-        return URLToken{potentialURL};
+    if (reachedTokenEnd()) {
+
+        // This is the best guess at something that could be a URL (no guarentees)
+        // A regex would probably work here, but... have you ever tried defining a regex for all possible URLs?
+        return URLToken{std::string(m_tokenStart, m_currentChar)};
     }
 
     // failure path, this is an error token
-    return ErrorToken{potentialURL};
+    return scanErrorToken();
 }
 
 
@@ -98,7 +97,7 @@ Token Lexer::scanAlphaToken() {
     } 
     // Check to see if we can transition to a URL token
     // is there a better heuristic? almost certainly.
-    else if (*m_currentChar == isCharAnyOf{':', '/', '.', '@', '-', '?', '=', '&', '+', ';', '$', '#'}) { 
+    else if (isValidURLCharacter(*m_currentChar)) { 
 
         // this miiiiiight be a URL token
         return scanURLToken();
@@ -136,7 +135,7 @@ Token Lexer::scanNumericToken() {
     // This could potentially be a URL token if a dot separater is encountered, hand things off to the 
     // scanURLToken method. Note: This is a safe dereference bceause we already know m_currentChar is not at
     // m_queryString.end() because of hte call to reachedTokenEnd()
-    else if ('.' == *m_currentChar) {
+    else if (isValidURLCharacter(*m_currentChar)) {
 
         return scanURLToken();
     }

@@ -18,28 +18,21 @@ TEST(RecognizeTokens, EOFTokens) {
 TEST(RecognizeTokens, ErrorTokens) {
 
     // A garbage query containing all error tokens and one valid token with some whitespace in between
-    Lexer lexer_T1{"SELECTT   1234A A1234  =! !==    FROM"};
+    Lexer lexer_T1{"SELE#CT   ^1234A =! !==    FROM"};
 
-    // Almost corret keyword: SELECTT
+    // Almost corret keyword: SELECT
     Token token_T1{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T1));
 
     ErrorToken error_T1 = std::get<ErrorToken>(token_T1);
-    EXPECT_STREQ("SELECTT", error_T1.m_errorLexeme.c_str());
+    EXPECT_STREQ("SELE#CT", error_T1.m_errorLexeme.c_str());
 
-    // Malformed integer value: 1234A
+    // Malformed integer value: ^1234A
     Token token_T2{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T2));
 
     ErrorToken error_T2 = std::get<ErrorToken>(token_T2);
-    EXPECT_STREQ("1234A", error_T2.m_errorLexeme.c_str());
-
-    // Malformed string value: A1234
-    Token token_T3{lexer_T1.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T3));
-
-    ErrorToken error_T3 = std::get<ErrorToken>(token_T3);
-    EXPECT_STREQ("A1234", error_T3.m_errorLexeme.c_str());
+    EXPECT_STREQ("^1234A", error_T2.m_errorLexeme.c_str());
 
     // Backwords comparison token: =!
     Token token_T4{lexer_T1.nextToken()};
@@ -287,22 +280,22 @@ TEST(RecognizeTokens, KeywordTokens) {
     Lexer lexer_T2{"ALLANY ALL.ANY ALLL .ALL ALL. ALL1"};
     
     Token token_T21{lexer_T2.nextToken()}; // ALLANY
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T21));
+    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T21));
 
     Token token_T22{lexer_T2.nextToken()}; // ALL.ANY
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T22));
+    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T22));
 
     Token token_T23{lexer_T2.nextToken()}; // ALLL
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T23));
+    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T23));
 
     Token token_T24{lexer_T2.nextToken()}; // .ALL
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T24));
+    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T24));
 
     Token token_T25{lexer_T2.nextToken()}; // ALL.
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T25));
+    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T25));
 
     Token token_T26{lexer_T2.nextToken()}; // ALL1
-    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T24));
+    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T24));
 
     Token token_T27{lexer_T2.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T27));

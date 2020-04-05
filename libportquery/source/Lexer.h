@@ -192,6 +192,14 @@ class Lexer {
                 *m_currentChar == isCharAnyOf{'*', '(', ')', ',', ';'};
         }
 
+        // This could be handled better. For right now, these are the valid URL tokens. URL tokens could contain
+        // any of the tokens above as well, but those are more rare. This should be changed in the future.
+        static bool isValidURLCharacter(const char c) {
+            return std::isalpha(c) || std::isdigit(c) || 
+                c == isCharAnyOf{'$', '-', '_', '.', '+', '!', '\'', '/', '?', ':', '@', '=', '&'};
+
+        }
+
         // This query string represents the SQL query to be scanned
         std::string m_queryString;
 
