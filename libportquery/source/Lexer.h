@@ -153,7 +153,7 @@ class Lexer {
         // calls the internal scanNextToken function to get get an output
         Token nextToken();
 
-        // Token peek();
+        Token peek();
 
     private:
 

@@ -300,3 +300,26 @@ TEST(RecognizeTokens, KeywordTokens) {
     Token token_T27{lexer_T2.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T27));
 };
+
+
+TEST(LexerFunctionality, Peek) {
+
+    // query string holding one valid token with some space after, past that EOF is returned
+    Lexer lexer_T1{"SELECT     "};
+
+    Token token_T1{lexer_T1.peek()};
+    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T1));
+    KeywordToken keyword_T1 = std::get<KeywordToken>(token_T1);
+    EXPECT_TRUE(KeywordToken::SELECT == keyword_T1.m_keyword);
+
+    Token token_T2{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T2));
+    KeywordToken keyword_T2 = std::get<KeywordToken>(token_T2);
+    EXPECT_TRUE(KeywordToken::SELECT == keyword_T2.m_keyword);
+
+    Token token_T3{lexer_T1.peek()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T3));
+
+    Token token_T4{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T4));
+}

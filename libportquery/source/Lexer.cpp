@@ -26,6 +26,18 @@ Token Lexer::nextToken() {
 }
 
 
+Token Lexer::peek() {
+
+    // if the peek token is empty, set it to the next token
+    if (std::nullopt == m_peekToken) { 
+
+        m_peekToken = scanNextToken();
+    }
+
+    return *m_peekToken;
+}
+
+
 Token Lexer::scanErrorToken() {
     // Grab everything that isn't a white space character. This is considered the error lexeme;
     // This method assumes that the caller detected an invalid character somewhere and m_currentChar
