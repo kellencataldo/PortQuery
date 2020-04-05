@@ -59,7 +59,7 @@ TEST(RecognizeTokens, ErrorTokens) {
     Token token_T6{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
     KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
-    EXPECT_TRUE(KeywordToken::SELECT == keyword_T6.m_keyword);
+    EXPECT_TRUE(KeywordToken::FROM == keyword_T6.m_keyword);
 
     // And last but not least is the EOF token
     lexer_T1.nextToken();
@@ -279,4 +279,31 @@ TEST(RecognizeTokens, KeywordTokens) {
     ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T19));
     KeywordToken keyword_T19 = std::get<KeywordToken>(token_T19);
     EXPECT_TRUE(KeywordToken::UDP == keyword_T19.m_keyword);
+
+    Token token_T20{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
+
+    // Bad inputs
+    Lexer lexer_T2{"ALLANY ALL.ANY ALLL .ALL ALL. ALL1"};
+    
+    Token token_T21{lexer_T2.nextToken()}; // ALLANY
+    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T21));
+
+    Token token_T22{lexer_T2.nextToken()}; // ALL.ANY
+    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T22));
+
+    Token token_T23{lexer_T2.nextToken()}; // ALLL
+    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T23));
+
+    Token token_T24{lexer_T2.nextToken()}; // .ALL
+    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T24));
+
+    Token token_T25{lexer_T2.nextToken()}; // ALL.
+    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T25));
+
+    Token token_T26{lexer_T2.nextToken()}; // ALL1
+    ASSERT_TRUE(std::holds_alternative<ErrorToken>(token_T24));
+
+    Token token_T27{lexer_T2.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T27));
 };
