@@ -11,33 +11,8 @@
 
 /* Other tokens that could be supported in the future
 
-    AS,
-    ASC,
-    CASE,
-    CROSS,
-    DESC,
-    DESCRIBE,  keep this? 
-    DISTINCT,
-    DISTINCTROW,
-    ELSE,
-    ELSEIF,
-    EXISTS,
-    INNER,
-    JOIN,
-    LEFT,
-    MATCH,
-    NATURAL,
-    ON,
-    OUTER,
-    RIGHT,
-    STRAIGHT_JOIN,  keep this too? 
-    THEN,  keep conditionals 
-    TO,
-    UNION,
-    UNIQUE,
-    USING,
-    WHEN,
-    WITH,
+    AS, ASC, CASE, CROSS, DESC, DESCRIBE, DISTINCT, DISTINCTROW, ELSE, ELSEIF, EXISTS, INNER, JOIN, LEFT, MATCH,
+    NATURAL, ON, OUTER, RIGHT, STRAIGHT_JOIN, THEN, TO, UNION, UNIQUE, USING, WHEN, WITH,
 */
 
 
