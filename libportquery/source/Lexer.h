@@ -41,13 +41,13 @@ struct KeywordToken {
 
     // Enum of all supported keywords
     enum Keyword {
-
         // SQL Keywords
         ALL,
         AND,
         ANY,
         BETWEEN,
         COUNT,
+        DISTINCT,
         FROM,
         // GROUP_BY,
         // HAVING,
@@ -67,7 +67,11 @@ struct KeywordToken {
         TCP,
         UDP
     };
-    
+
+    static const std::map<std::string, KeywordToken::Keyword> s_keywordMap;
+
+    static Keyword lookupKeywordByString(const std::string candidateString);
+    static std::string lookupStringByKeyword(const Keyword k);
     Keyword m_keyword; 
 };
 

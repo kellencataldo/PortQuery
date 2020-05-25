@@ -1,8 +1,50 @@
 #include <exception>
 #include <cctype>
 #include <sstream>
+#include <algorithm>
 
 #include "Lexer.h"
+
+
+// some helper functions in regards to keyword tokens
+const std::map<std::string, KeywordToken::Keyword> KeywordToken::s_keywordMap { 
+    {"ALL",      KeywordToken::ALL},
+    {"AND",      KeywordToken::AND},
+    {"ANY",      KeywordToken::ANY},
+    {"BETWEEN",  KeywordToken::BETWEEN},
+    {"COUNT",    KeywordToken::COUNT},
+    {"DISTINCT", KeywordToken::DISTINCT},
+    {"FROM",     KeywordToken::FROM},
+    {"IF",       KeywordToken::IF},
+    {"IN",       KeywordToken::IN},
+    {"IS",       KeywordToken::IS},
+    {"LIKE",     KeywordToken::LIKE},
+    {"LIMIT",    KeywordToken::LIMIT},
+    {"NOT",      KeywordToken::NOT},
+    {"OR",       KeywordToken::OR},
+    {"ORDER",    KeywordToken::ORDER},
+    {"SELECT",   KeywordToken::SELECT},
+    {"WHERE",    KeywordToken::WHERE},
+    {"PORT",     KeywordToken::PORT},
+    {"TCP",      KeywordToken::TCP},
+    {"UDP",      KeywordToken::UDP}
+};
+
+
+std::string KeywordToken::lookupStringByKeyword(const KeywordToken::Keyword k) {
+
+    auto iter = std::find_if(KeywordToken::s_keywordMap.begin(), KeywordToken::s_keywordMap.end(),
+            [&k](const std::pair<std::string, KeywordToken::Keyword> &p) {return p.second == k;});
+
+    // keyword identified
+    if (KeywordToken::s_keywordMap.end() != iter) {
+
+        return iter->first;
+    }
+
+    // unknown keyword. throw here? debug print?
+    return "[UKNOWN KEYWORD]";
+}
 
 
 Token Lexer::nextToken() {
@@ -73,33 +115,11 @@ Token Lexer::scanAlphaToken() {
 
     // If we stopped at the end of the token, check if this is a keyword
     if (reachedTokenEnd()) {
-
-        static const std::map<std::string, KeywordToken::Keyword> keywordMap{ 
-            {"ALL",     KeywordToken::ALL},
-            {"AND",     KeywordToken::AND},
-            {"ANY",     KeywordToken::ANY},
-            {"BETWEEN", KeywordToken::BETWEEN},
-            {"COUNT",   KeywordToken::COUNT},
-            {"FROM",    KeywordToken::FROM},
-            {"IF",      KeywordToken::IF},
-            {"IN",      KeywordToken::IN},
-            {"IS",      KeywordToken::IS},
-            {"LIKE",    KeywordToken::LIKE},
-            {"LIMIT",   KeywordToken::LIMIT},
-            {"NOT",     KeywordToken::NOT},
-            {"OR",      KeywordToken::OR},
-            {"ORDER",   KeywordToken::ORDER},
-            {"SELECT",  KeywordToken::SELECT},
-            {"WHERE",   KeywordToken::WHERE},
-            {"PORT",    KeywordToken::PORT},
-            {"TCP",     KeywordToken::TCP},
-            {"UDP",     KeywordToken::UDP}
-        };
-       
+      
         // Check to see if we have a mapping to a keyword token
         std::string key(m_tokenStart, m_currentChar);
-        auto keywordMapIter = keywordMap.find(key);
-        if (keywordMap.end() != keywordMapIter) {
+        auto keywordMapIter = KeywordToken::s_keywordMap.find(key);
+        if (KeywordToken::s_keywordMap.end() != keywordMapIter) {
             // if not, fall through and scan whatever we found as an error token
             return KeywordToken{keywordMapIter->second};
         }
@@ -234,7 +254,6 @@ Token Lexer::scanNextToken() {
         // this could return a keyword, a column, a URL, or an error token
         return scanAlphaToken();
     }
-    //
     
     // nothing else matches, return error case.
     return scanErrorToken();
