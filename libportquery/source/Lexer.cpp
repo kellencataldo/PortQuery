@@ -24,12 +24,17 @@ Token getKeywordTokenFromString(const std::string lexeme) {
         {"OR",      ORToken{}},
         {"ORDER",   ORDERToken{}},
         {"SELECT",  SELECTToken{}},
-        {"WHERE",   WHEREToken{}}
+        {"WHERE",   WHEREToken{}},
+
+        // these aren't really keywords
+        {"PORT",    ColumnToken{ ColumnToken::PORT }},
+        {"TCP",     ColumnToken{ ColumnToken::TCP }},
+        {"UDP",     ColumnToken{ ColumnToken::UDP }}
     };
 
     auto keywordMapIter = keywordMap.find(lexeme);
     if (keywordMap.end() != keywordMapIter) {
-            return keywordMapIter->second;
+        return keywordMapIter->second;
     }
 
     // EOFToken here signafies "not a keyword"
