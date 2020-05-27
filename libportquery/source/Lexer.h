@@ -11,70 +11,40 @@
 
 /* Other tokens that could be supported in the future
 
-    AS, ASC, CASE, CROSS, DESC, DESCRIBE, DISTINCT, DISTINCTROW, ELSE, ELSEIF, EXISTS, INNER, JOIN, LEFT, MATCH,
-    NATURAL, ON, OUTER, RIGHT, STRAIGHT_JOIN, THEN, TO, UNION, UNIQUE, USING, WHEN, WITH,
+    AS, ASC, CASE, CROSS, DESC, DESCRIBE, EXISTS, INNER, JOIN, LEFT, MATCH,
+    NATURAL, ON, OUTER, RIGHT, TO, UNION, UNIQUE, USING, WHEN, WITH,
 */
 
 
 // Handy little helper class which performs a comparison on a collection of objects of varying lengths. 
 // Used mostly when comparing a single char against a collection of characters to determine how to scan a 
-// certain token. For example: if (someChar == isCharAnyOf{'<', '>', '='}) parse it as a comparison operator
+// certain token. For example: if (someChar == isElementPresent<char>{'<', '>', '='}) parse it as a comparison operator
 
 // Inherit from vector so we get not only the collection, but also the convenient constructors that come with it.
 // Note the wierd syntax in the example above, this is because you are looking a braces initialized constructor
-struct isCharAnyOf : private std::vector<char> {
-    using std::vector<char>::vector;
+template <typename T> struct isElementPresent: private std::vector<T> {
+    using std::vector<T>::vector;
     bool operator==(const char& c) const {
         // Upcast to so that we can perform std::any_of on our vector
-        const std::vector<char>& collection = static_cast<const std::vector<char>&>(*this);
-        return std::any_of(collection.cbegin(), collection.cend(), [&c](const char& other) {return c == other;});
+        const std::vector<T>& collection = static_cast<const std::vector<T>&>(*this);
+        return std::any_of(collection.cbegin(), collection.cend(), [&c](const T& other) {return c == other;});
     }
 
     // Add this is so we can support both comparisons from both sides
-    friend bool operator==(const char& c, const isCharAnyOf rhs) { return rhs == c; }
+    friend bool operator==(const T& lhs, const isElementPresent rhs) { return rhs == lhs; }
 };
 
 
-// This token represents all keywords from the above enum.
-// No other information except which keyword is needed
-struct KeywordToken { 
+struct ColumnToken {
 
-    // Enum of all supported keywords
-    enum Keyword {
-        // SQL Keywords
-        ALL,
-        AND,
-        ANY,
-        BETWEEN,
-        COUNT,
-        DISTINCT,
-        FROM,
-        // GROUP_BY,
-        // HAVING,
-        IF,
-        IN,
-        IS,
-        LIKE,
-        LIMIT,
-        NOT,
-        OR,
-        ORDER,
-        SELECT,
-        WHERE,
-
-        // These are columns names. In the future, this could possibly be broken off into its own class
+    enum Column {
         PORT,
         TCP,
         UDP
     };
 
-    static const std::map<std::string, KeywordToken::Keyword> s_keywordMap;
-
-    static Keyword lookupKeywordByString(const std::string candidateString);
-    static std::string lookupStringByKeyword(const Keyword k);
-    Keyword m_keyword; 
+    Column m_column;
 };
-
 
 // This token represents any numeric value.
 // For right now, only values which can be stored in an unsigned short
@@ -85,8 +55,32 @@ struct NumericToken { uint16_t m_value; };
 // This token represents a binary comparison operator such as !=
 struct ComparisonToken { std::function<uint16_t(const uint16_t, const uint16_t)> m_compareFunc; };
 
-// This token represents a URL upon which to make queries
-struct URLToken { std::string_view m_URL; };
+// This token represents a User string which contains valid characters
+// This could either be a table alias, a URL, a column alias, etc
+struct UserToken { std::string_view m_UserToken; };
+
+
+// Keyword tokens of all the supported SOSQL keywords
+struct ALLToken { };
+struct ANDToken { };
+struct ANYToken { };
+struct BETWEENToken { };
+struct COUNTToken { };
+struct DISTINCTToken { };
+struct FROMToken { };
+// GROUP_BY,
+// HAVING,
+struct IFToken { };
+struct INToken { };
+struct ISToken { };
+struct LIKEToken { };
+struct LIMITToken { };
+struct NOTToken { };
+struct ORToken { };
+struct ORDERToken { };
+struct SELECTToken { };
+struct WHEREToken { };
+
 
 // This token should be pretty self explanatory.
 struct EOFToken { };
@@ -102,10 +96,29 @@ template <char> struct PunctuationToken { };
 struct ErrorToken { std::string m_errorLexeme; };
 
 using Token = std::variant<
-    KeywordToken,
     NumericToken,
     ComparisonToken,
-    URLToken,
+    UserToken,
+    ColumnToken,
+
+    ALLToken,
+    ANDToken,
+    ANYToken,
+    BETWEENToken,
+    COUNTToken,
+    DISTINCTToken,
+    FROMToken,
+    IFToken,
+    INToken,
+    ISToken,
+    LIKEToken,
+    LIMITToken,
+    NOTToken,
+    ORToken,
+    ORDERToken,
+    SELECTToken,
+    WHEREToken,
+
     EOFToken,
 
     // All the supported punctuation types below, maybe more to come?
@@ -157,9 +170,9 @@ class Lexer {
         // Tokens that could be returned by this routine are: ComparisonTokens, ErrorTokens
         Token scanComparisonToken();
 
-        // This method is transitioned to when a potential URL has been spotted. URL's are VERY hard to match
+        // This method is transitioned to when a potential user has been spotted. User provided URL's are VERY hard to match
         // against, so this can be transitioned to from both scanAlphaToken and scanNumericToken routines
-        Token scanURLToken();
+        Token scanUserToken();
 
         // Some characters are not whitespace, but can also legitimately terminate a character
         // Essentially this includes all the punctuation tokens. This could be expanded in the future to include
@@ -168,14 +181,14 @@ class Lexer {
 
             // All of these are for checks that a token can be legitimately terminated
             return m_queryString.end() == m_currentChar || std::isspace(*m_currentChar) || 
-                *m_currentChar == isCharAnyOf{'*', '(', ')', ',', ';'};
+                *m_currentChar == isElementPresent<char>{'*', '(', ')', ',', ';'};
         }
 
-        // This could be handled better. For right now, these are the valid URL tokens. URL tokens could contain
+        // This could be handled better. For right now, these are the valid URL characters. URL tokenbs could contain
         // any of the tokens above as well, but those are more rare. This should be changed in the future.
-        static bool isValidURLCharacter(const char c) {
+        static bool isValidUserCharacter(const char c) {
             return std::isalpha(c) || std::isdigit(c) || 
-                c == isCharAnyOf{'$', '-', '_', '.', '+', '!', '\'', '/', '?', ':', '@', '=', '&'};
+                c == isElementPresent<char>{'$', '-', '_', '.', '+', '!', '\'', '/', '?', ':', '@', '=', '&'};
 
         }
 

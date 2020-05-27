@@ -50,9 +50,7 @@ TEST(RecognizeTokens, ErrorTokens) {
 
     // after all these errors we still recognize a valid token
     Token token_T6{lexer_T1.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
-    KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
-    EXPECT_TRUE(KeywordToken::FROM == keyword_T6.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<FROMToken>(token_T6));
 
     // And last but not least is the EOF token
     lexer_T1.nextToken();
@@ -176,129 +174,107 @@ TEST(RecognizeTokens, NumericTokens) {
 
 TEST(RecognizeTokens, KeywordTokens) {
 
-    Lexer lexer_T1{"ALL AND ANY BETWEEN COUNT FROM IF IN IS LIKE LIMIT NOT OR ORDER SELECT WHERE PORT TCP UDP"};
+    Lexer lexer_T1{"ALL AND ANY BETWEEN COUNT FROM IF IN IS LIKE LIMIT NOT OR ORDER SELECT WHERE"};
 
     Token token_T1{lexer_T1.nextToken()}; // ALL
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T1));
-    KeywordToken keyword_T1 = std::get<KeywordToken>(token_T1);
-    EXPECT_TRUE(KeywordToken::ALL == keyword_T1.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<ALLToken>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()}; // AND
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T2));
-    KeywordToken keyword_T2 = std::get<KeywordToken>(token_T2);
-    EXPECT_TRUE(KeywordToken::AND == keyword_T2.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<ANDToken>(token_T2));
 
     Token token_T3{lexer_T1.nextToken()}; // ANY
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T3));
-    KeywordToken keyword_T3 = std::get<KeywordToken>(token_T3);
-    EXPECT_TRUE(KeywordToken::ANY == keyword_T3.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<ANYToken>(token_T3));
 
     Token token_T4{lexer_T1.nextToken()}; // BETWEEN
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T4));
-    KeywordToken keyword_T4 = std::get<KeywordToken>(token_T4);
-    EXPECT_TRUE(KeywordToken::BETWEEN == keyword_T4.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<BETWEENToken>(token_T4));
 
     Token token_T5{lexer_T1.nextToken()}; // COUNT
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T5));
-    KeywordToken keyword_T5 = std::get<KeywordToken>(token_T5);
-    EXPECT_TRUE(KeywordToken::COUNT == keyword_T5.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<COUNTToken>(token_T5));
 
     Token token_T6{lexer_T1.nextToken()}; // FROM
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T6));
-    KeywordToken keyword_T6 = std::get<KeywordToken>(token_T6);
-    EXPECT_TRUE(KeywordToken::FROM == keyword_T6.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<FROMToken>(token_T6));
 
     Token token_T7{lexer_T1.nextToken()}; // IF
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T7));
-    KeywordToken keyword_T7 = std::get<KeywordToken>(token_T7);
-    EXPECT_TRUE(KeywordToken::IF == keyword_T7.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<IFToken>(token_T7));
 
     Token token_T8{lexer_T1.nextToken()}; // IN
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T8));
-    KeywordToken keyword_T8 = std::get<KeywordToken>(token_T8);
-    EXPECT_TRUE(KeywordToken::IN == keyword_T8.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<INToken>(token_T8));
 
     Token token_T9{lexer_T1.nextToken()}; // IS
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T9));
-    KeywordToken keyword_T9 = std::get<KeywordToken>(token_T9);
-    EXPECT_TRUE(KeywordToken::IS == keyword_T9.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<ISToken>(token_T9));
 
     Token token_T10{lexer_T1.nextToken()}; // LIKE
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T10));
-    KeywordToken keyword_T10 = std::get<KeywordToken>(token_T10);
-    EXPECT_TRUE(KeywordToken::LIKE == keyword_T10.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<LIKEToken>(token_T10));
 
     Token token_T11{lexer_T1.nextToken()}; // LIMIT
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T11));
-    KeywordToken keyword_T11 = std::get<KeywordToken>(token_T11);
-    EXPECT_TRUE(KeywordToken::LIMIT == keyword_T11.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<LIMITToken>(token_T11));
 
     Token token_T12{lexer_T1.nextToken()}; // NOT
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T12));
-    KeywordToken keyword_T12 = std::get<KeywordToken>(token_T12);
-    EXPECT_TRUE(KeywordToken::NOT == keyword_T12.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<NOTToken>(token_T12));
 
     Token token_T13{lexer_T1.nextToken()}; // OR
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T13));
-    KeywordToken keyword_T13 = std::get<KeywordToken>(token_T13);
-    EXPECT_TRUE(KeywordToken::OR == keyword_T13.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<ORToken>(token_T13));
 
     Token token_T14{lexer_T1.nextToken()}; // ORDER 
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T14));
-    KeywordToken keyword_T14 = std::get<KeywordToken>(token_T14);
-    EXPECT_TRUE(KeywordToken::ORDER == keyword_T14.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<ORDERToken>(token_T14));
 
     Token token_T15{lexer_T1.nextToken()}; // SELECT
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T15));
-    KeywordToken keyword_T15 = std::get<KeywordToken>(token_T15);
-    EXPECT_TRUE(KeywordToken::SELECT == keyword_T15.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<SELECTToken>(token_T15));
 
     Token token_T16{lexer_T1.nextToken()}; // WHERE
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T16));
-    KeywordToken keyword_T16 = std::get<KeywordToken>(token_T16);
-    EXPECT_TRUE(KeywordToken::WHERE == keyword_T16.m_keyword);
-
-    Token token_T17{lexer_T1.nextToken()}; // PORT
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T17));
-    KeywordToken keyword_T17 = std::get<KeywordToken>(token_T17);
-    EXPECT_TRUE(KeywordToken::PORT == keyword_T17.m_keyword);
-
-    Token token_T18{lexer_T1.nextToken()}; // TCP
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T18));
-    KeywordToken keyword_T18 = std::get<KeywordToken>(token_T18);
-    EXPECT_TRUE(KeywordToken::TCP == keyword_T18.m_keyword);
-
-    Token token_T19{lexer_T1.nextToken()}; // UDP
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T19));
-    KeywordToken keyword_T19 = std::get<KeywordToken>(token_T19);
-    EXPECT_TRUE(KeywordToken::UDP == keyword_T19.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<WHEREToken>(token_T16));
 
     Token token_T20{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
 
-    // Bad inputs
+    // Bad inputs (parsed as user identifiers)
     Lexer lexer_T2{"ALLANY ALL.ANY ALLL .ALL ALL. ALL1"};
     
     Token token_T21{lexer_T2.nextToken()}; // ALLANY
-    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T21));
+    ASSERT_TRUE(std::holds_alternative<UserToken>(token_T21));
 
     Token token_T22{lexer_T2.nextToken()}; // ALL.ANY
-    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T22));
+    ASSERT_TRUE(std::holds_alternative<UserToken>(token_T22));
 
     Token token_T23{lexer_T2.nextToken()}; // ALLL
-    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T23));
+    EXPECT_TRUE(std::holds_alternative<UserToken>(token_T23));
 
     Token token_T24{lexer_T2.nextToken()}; // .ALL
-    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T24));
+    EXPECT_TRUE(std::holds_alternative<ErrorToken>(token_T24));
 
     Token token_T25{lexer_T2.nextToken()}; // ALL.
-    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T25));
+    EXPECT_TRUE(std::holds_alternative<UserToken>(token_T25));
 
     Token token_T26{lexer_T2.nextToken()}; // ALL1
-    ASSERT_FALSE(std::holds_alternative<KeywordToken>(token_T24));
+    EXPECT_TRUE(std::holds_alternative<UserToken>(token_T26));
 
     Token token_T27{lexer_T2.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T27));
+    EXPECT_TRUE(std::holds_alternative<EOFToken>(token_T27));
+};
+
+
+TEST(RecognizeTokens, ColumnTokens) {
+
+    // Bad inputs
+    Lexer lexer_T1{"PORT TCP UDP"};
+
+    Token token_T1{lexer_T1.nextToken()}; // PORT
+    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T1));
+    ColumnToken Column_T1 = std::get<ColumnToken>(token_T1);
+    EXPECT_TRUE(ColumnToken::PORT == Column_T1.m_column);
+
+    Token token_T2{lexer_T1.nextToken()}; // TCP
+    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T2));
+    ColumnToken column_T2 = std::get<ColumnToken>(token_T2);
+    EXPECT_TRUE(ColumnToken::TCP == column_T2.m_column);
+
+    Token token_T3{lexer_T1.nextToken()}; // UDP
+    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T3));
+    ColumnToken column_T3 = std::get<ColumnToken>(token_T3);
+    EXPECT_TRUE(ColumnToken::UDP == column_T3.m_column);
+
+    Token token_T20{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
 };
 
 
@@ -308,14 +284,10 @@ TEST(LexerFunctionality, Peek) {
     Lexer lexer_T1{"SELECT     "};
 
     Token token_T1{lexer_T1.peek()};
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T1));
-    KeywordToken keyword_T1 = std::get<KeywordToken>(token_T1);
-    EXPECT_TRUE(KeywordToken::SELECT == keyword_T1.m_keyword);
+    EXPECT_TRUE(std::holds_alternative<SELECTToken>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<KeywordToken>(token_T2));
-    KeywordToken keyword_T2 = std::get<KeywordToken>(token_T2);
-    EXPECT_TRUE(KeywordToken::SELECT == keyword_T2.m_keyword);
+    ASSERT_TRUE(std::holds_alternative<SELECTToken>(token_T2));
 
     Token token_T3{lexer_T1.peek()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T3));

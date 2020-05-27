@@ -6,45 +6,37 @@
 #include "Lexer.h"
 
 
-// some helper functions in regards to keyword tokens
-const std::map<std::string, KeywordToken::Keyword> KeywordToken::s_keywordMap { 
-    {"ALL",      KeywordToken::ALL},
-    {"AND",      KeywordToken::AND},
-    {"ANY",      KeywordToken::ANY},
-    {"BETWEEN",  KeywordToken::BETWEEN},
-    {"COUNT",    KeywordToken::COUNT},
-    {"DISTINCT", KeywordToken::DISTINCT},
-    {"FROM",     KeywordToken::FROM},
-    {"IF",       KeywordToken::IF},
-    {"IN",       KeywordToken::IN},
-    {"IS",       KeywordToken::IS},
-    {"LIKE",     KeywordToken::LIKE},
-    {"LIMIT",    KeywordToken::LIMIT},
-    {"NOT",      KeywordToken::NOT},
-    {"OR",       KeywordToken::OR},
-    {"ORDER",    KeywordToken::ORDER},
-    {"SELECT",   KeywordToken::SELECT},
-    {"WHERE",    KeywordToken::WHERE},
-    {"PORT",     KeywordToken::PORT},
-    {"TCP",      KeywordToken::TCP},
-    {"UDP",      KeywordToken::UDP}
-};
+Token getKeywordTokenFromString(const std::string lexeme) {
 
+    static const std::map<std::string, Token> keywordMap { 
+        {"ALL",     ALLToken{}},
+        {"AND",     ANDToken{}},
+        {"ANY",     ANYToken{}},
+        {"BETWEEN", BETWEENToken{}},
+        {"COUNT",   COUNTToken{}},
+        {"FROM",    FROMToken{}},
+        {"IF",      IFToken{}},
+        {"IN",      INToken{}},
+        {"IS",      ISToken{}},
+        {"LIKE",    LIKEToken{}},
+        {"LIMIT",   LIMITToken{}},
+        {"NOT",     NOTToken{}},
+        {"OR",      ORToken{}},
+        {"ORDER",   ORDERToken{}},
+        {"SELECT",  SELECTToken{}},
+        {"WHERE",   WHEREToken{}}
+    };
 
-std::string KeywordToken::lookupStringByKeyword(const KeywordToken::Keyword k) {
-
-    auto iter = std::find_if(KeywordToken::s_keywordMap.begin(), KeywordToken::s_keywordMap.end(),
-            [&k](const std::pair<std::string, KeywordToken::Keyword> &p) {return p.second == k;});
-
-    // keyword identified
-    if (KeywordToken::s_keywordMap.end() != iter) {
-
-        return iter->first;
+    auto keywordMapIter = keywordMap.find(lexeme);
+    if (keywordMap.end() != keywordMapIter) {
+            return keywordMapIter->second;
     }
 
-    // unknown keyword. throw here? debug print?
-    return "[UKNOWN KEYWORD]";
+    // EOFToken here signafies "not a keyword"
+    return EOFToken{};
 }
+
+
 
 
 Token Lexer::nextToken() {
@@ -89,17 +81,15 @@ Token Lexer::scanErrorToken() {
 }
 
 
-Token Lexer::scanURLToken() {
+Token Lexer::scanUserToken() {
 
     // Very similar to scan error Token, except we first check to see if it can be converted to a binary address
     // first grab everything
-    while(m_queryString.end() != ++m_currentChar && isValidURLCharacter(*m_currentChar));
+    while(m_queryString.end() != ++m_currentChar && isValidUserCharacter(*m_currentChar));
 
     if (reachedTokenEnd()) {
 
-        // This is the best guess at something that could be a URL (no guarentees)
-        // A regex would probably work here, but... have you ever tried defining a regex for all possible URLs?
-        return URLToken{std::string(m_tokenStart, m_currentChar)};
+        return UserToken{std::string(m_tokenStart, m_currentChar)};
     }
 
     // failure path, this is an error token
@@ -117,22 +107,22 @@ Token Lexer::scanAlphaToken() {
     if (reachedTokenEnd()) {
       
         // Check to see if we have a mapping to a keyword token
-        std::string key(m_tokenStart, m_currentChar);
-        auto keywordMapIter = KeywordToken::s_keywordMap.find(key);
-        if (KeywordToken::s_keywordMap.end() != keywordMapIter) {
-            // if not, fall through and scan whatever we found as an error token
-            return KeywordToken{keywordMapIter->second};
+        std::string lexeme(m_tokenStart, m_currentChar);
+        Token keywordToken = getKeywordTokenFromString(lexeme);
+        if (std::holds_alternative<EOFToken>(keywordToken)) {
+
+            // this is not really an EOFToken, EOFToken is just used in this method to say "token not found"
+            return UserToken{lexeme};
         }
 
-        // if it is not in the map, then its a malformed comparison token
-        return ErrorToken{key};
+        return keywordToken;
     } 
-    // Check to see if we can transition to a URL token
+    // Check to see if we can transition to a User token
     // is there a better heuristic? almost certainly.
-    else if (isValidURLCharacter(*m_currentChar)) { 
+    else if (isValidUserCharacter(*m_currentChar)) { 
 
-        // this miiiiiight be a URL token
-        return scanURLToken();
+        // this miiiiiight be a User token
+        return scanUserToken();
     }
 
     return scanErrorToken();
@@ -164,12 +154,12 @@ Token Lexer::scanNumericToken() {
         return ErrorToken{potentialNumeric};
     }
 
-    // This could potentially be a URL token if a dot separater is encountered, hand things off to the 
-    // scanURLToken method. Note: This is a safe dereference bceause we already know m_currentChar is not at
+    // This could potentially be a User token if a dot separater is encountered, hand things off to the 
+    // scanUserToken method. Note: This is a safe dereference bceause we already know m_currentChar is not at
     // m_queryString.end() because of hte call to reachedTokenEnd()
-    else if (isValidURLCharacter(*m_currentChar)) {
+    else if (isValidUserCharacter(*m_currentChar)) {
 
-        return scanURLToken();
+        return scanUserToken();
     }
 
     return scanErrorToken();
@@ -182,7 +172,7 @@ Token Lexer::scanComparisonToken() {
     // Scan forwards one character and check to see if we have reached the end of our token. Also
     // check to see if we possibly have a two character comparison token, if not, it won't be present in our map
     m_currentChar++;
-    if(reachedTokenEnd() || (*(m_currentChar++) == isCharAnyOf{'=', '>'} && reachedTokenEnd())) {
+    if(reachedTokenEnd() || (*(m_currentChar++) == isElementPresent<char>{'=', '>'} && reachedTokenEnd())) {
 
         static std::map<std::string, std::function<uint16_t(const uint16_t, const uint16_t)>> operatorMap{
             {"=" , [](const uint16_t a, const uint16_t b) { return a == b; } },
@@ -238,20 +228,20 @@ Token Lexer::scanNextToken() {
    
 
     // next, lets try scanning some comparison operators
-    if (*m_currentChar == isCharAnyOf{'=', '>', '<'}) {
+    if (*m_currentChar == isElementPresent<char>{'=', '>', '<'}) {
         // The next character is potentially the beginning of a comparison operator
         return scanComparisonToken();
     }
 
     // next, is this a digit
     else if (std::isdigit(*m_currentChar)) {
-        // this could return a number, an error token, or a URL possibly
+        // this could return a number, an error token, or a User possibly
         return scanNumericToken();
     }
 
     // next is this a letter
     else if (std::isalpha(*m_currentChar)) {
-        // this could return a keyword, a column, a URL, or an error token
+        // this could return a keyword, a column, a User, or an error token
         return scanAlphaToken();
     }
     
