@@ -2,14 +2,13 @@
 
 // helper class for std::visit. Constructs a callable which accepts various types based on deduction
 template<class ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
-std::shared_ptr<ASTNodeBase> Parser::parseSOSQLStatement() {
-
-    Token t = m_lexer.nextToken();
+ASTNode Parser::parseSOSQLStatement() {
 
     // SOSQL statements can obviously only begin with the "SELECT" keyword
-    if (!std::holds_alternative<SELECTToken>(t)) {
+    if (!std::holds_alternative<SELECTToken>(m_lexer.nextToken())) {
 
         throw std::invalid_argument("Only SELECT statements are handled. Statement must begin with SELECT");
     }
@@ -18,42 +17,33 @@ std::shared_ptr<ASTNodeBase> Parser::parseSOSQLStatement() {
 }
 
 
-std::shared_ptr<ASTNodeBase> Parser::parseSetQuantifier() {
+ASTNode Parser::parseSetQuantifier() {
 
-    /*
+    return std::visit(overloaded {
+            [=] (COUNTToken)  { return parseCountSelect(); },
+            [=] (ColumnToken) { return parseColumnSelect(); },
+            [=] (PunctuationToken<'('>) { return parseColumnSelect(); },
+            [=] (auto) -> ASTNode { throw std::invalid_argument("Invalid token following SELECT keyword"); } }, 
+            m_lexer.peek());
+}
 
-    Token t = m_lexer.nextToken();
-    if (std::holds_alternative<KeywordToken>(t)) {
 
-        KeywordToken kt = std::get<KeywordToken>(t);
-        if (KeywordToken::COUNT == kt.m_keyword) {
-            return parseCountSelect();
-        }
+ASTNode Parser::parseCountSelect() {
 
-        else if (KeywordToken::DISTINCT == kt.m_keyword) {
-            return parseDistinctSelect();
-        }
+    // scan past the COUNT token
+    m_lexer.nextToken();
+    if (!std::holds_alternative<PunctuationToken<'('>>(m_lexer.nextToken())) {
 
-        throw std::invalid_argument("Invalid keyword provided as SELECT quantifier: " + KeywordToken::lookupStringByKeyword(kt.m_keyword));
+        throw std::invalid_argument("COUNT aggregates must be enclosed in parentheses");
     }
 
-    return parseColumnSelect();
-    */
+
+    // parse column list:::
 
     return NULL;
 }
 
 
-std::shared_ptr<ASTNodeBase> Parser::parseCountSelect() {
-    return NULL;
-}
-
-
-std::shared_ptr<ASTNodeBase> Parser::parseDistinctSelect() {
-    return NULL;
-}
-
-
-std::shared_ptr<ASTNodeBase> Parser::parseColumnSelect() {
+ASTNode Parser::parseColumnSelect() {
     return NULL;
 }

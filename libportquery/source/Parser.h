@@ -35,6 +35,8 @@ struct ASTCountSelectNode : ASTNodeBase {
 };
 
 
+using ASTNode = std::shared_ptr<ASTNodeBase>;
+
 class Parser { 
 
     public:
@@ -42,14 +44,14 @@ class Parser {
 
         // SELECT Only SQL
         // maybe make this a unique_ptr? investigation required.
-        std::shared_ptr<ASTNodeBase> parseSOSQLStatement();
+        ASTNode parseSOSQLStatement();
 
 
     private:
-        std::shared_ptr<ASTNodeBase> parseSetQuantifier();
-        std::shared_ptr<ASTNodeBase> parseCountSelect();
-        std::shared_ptr<ASTNodeBase> parseDistinctSelect();
-        std::shared_ptr<ASTNodeBase> parseColumnSelect();
+        ASTNode parseSetQuantifier();
+        ASTNode parseCountSelect();
+        ASTNode parseDistinctSelect();
+        ASTNode parseColumnSelect();
 
         Lexer m_lexer;
 };
