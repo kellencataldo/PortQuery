@@ -13,18 +13,20 @@ ASTNode Parser::parseSOSQLStatement() {
         throw std::invalid_argument("Only SELECT statements are handled. Statement must begin with SELECT");
     }
 
-    return parseSetQuantifier();
+    return std::visit(overloaded {
+            [=] (COUNTToken)  { return parseCountSelect(); },
+            [=] (auto) { return parseColumnSelect(); } }, 
+            m_lexer.peek());
 }
 
 
-ASTNode Parser::parseSetQuantifier() {
+ASTNode Parser::parseColumnSelect() {
 
-    return std::visit(overloaded {
-            [=] (COUNTToken)  { return parseCountSelect(); },
-            [=] (ColumnToken) { return parseColumnSelect(); },
-            [=] (PunctuationToken<'('>) { return parseColumnSelect(); },
-            [=] (auto) -> ASTNode { throw std::invalid_argument("Invalid token following SELECT keyword"); } }, 
-            m_lexer.peek());
+    ASTNode columnSelect = std::make_shared<ASTColumnSelectNode>();
+
+    
+
+    return NULL;
 }
 
 
@@ -44,6 +46,16 @@ ASTNode Parser::parseCountSelect() {
 }
 
 
-ASTNode Parser::parseColumnSelect() {
-    return NULL;
+/*
+ASTNode Parser::parseSetQuantifier() {
+
+    return std::visit(overloaded {
+            [=] (COUNTToken)  { return parseCountSelect(); },
+            [=] (ColumnToken) { return parseColumnSelect(); },
+            [=] (PunctuationToken<'('>) { return parseColumnSelect(); },
+            [=] (auto) -> ASTNode { throw std::invalid_argument("Invalid token following SELECT keyword"); } }, 
+            m_lexer.peek());
 }
+
+*/
+

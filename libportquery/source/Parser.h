@@ -23,12 +23,6 @@ struct ASTColumnSelectNode : ASTNodeBase {
 };
 
 
-struct ASTDistinctColumnSelectNode : ASTNodeBase {
-
-
-};
-
-
 struct ASTCountSelectNode : ASTNodeBase {
 
 
@@ -48,9 +42,7 @@ class Parser {
 
 
     private:
-        ASTNode parseSetQuantifier();
         ASTNode parseCountSelect();
-        ASTNode parseDistinctSelect();
         ASTNode parseColumnSelect();
 
         Lexer m_lexer;
