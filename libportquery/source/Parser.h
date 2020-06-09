@@ -7,19 +7,11 @@
 #include "Network.h"
 
 
-struct ASTNodeBase {
-
-    // public:
-    //      void accept(SOSQL visitor) = 0
-
-};
-
-
 struct SelectSet {
-    SelectSet() : m_selectPort(false) { m_selectedProtocols.m_value = 0; }
+    SelectSet() : m_selectPort(false), m_selectedProtocols(NetworkProtocols::NONE) { }
 
     bool m_selectPort;
-    Network::protocolFlags m_selectedProtocols;
+    NetworkProtocols m_selectedProtocols;
 };
 
 

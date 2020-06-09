@@ -1,8 +1,12 @@
 #pragma once
 
 #include <string>
-#include <tuple>
+#include <type_traits>
 
+/*
+ *
+ * Original idea: bad, hard to read and maintain, also... undefined behavior. Fun working with structured bindings though
+ 
 
 template<unsigned int... bitPositions> struct structuredBindingGen { };
 
@@ -31,12 +35,45 @@ template <unsigned int... bitPositions> binaryFlag <bitPositions...> operator|(b
     return { lhs.m_value | rhs.m_value }; 
 }
 
+using protocolFlags = binaryFlag<0,1>;
+namespace Protocols { namespace { const auto [TCP, UDP] = protocolFlags::values; }; };
+*/
 
-namespace Network {
-    using protocolFlags = binaryFlag<0,1>;
-    struct Protocols { const auto [TCP, UDP] = protocolFlags::values; };
-   // struct networkProtocols { auto [TCP, UDP] = protocolFlags::values; };
-   
+
+template<typename T> struct EnableBinaryOperators {
+    static const bool m_enable = false;
+};
+
+template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable, T>::type operator|(const T lhs, const T rhs) {
+    typedef typename std::underlying_type<T>::type underlying;
+    return static_cast<T>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+}
+
+template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable, T>::type operator&(const T lhs, const T rhs) {
+    typedef typename std::underlying_type<T>::type underlying;
+    return static_cast<T>(static_cast<underlying>(lhs) & static_cast<underlying>(rhs));
+}
+
+template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable, T>::type operator|=(T& lhs, const T rhs) {
+    typedef typename std::underlying_type<T>::type underlying;
+    return static_cast<T>(static_cast<underlying>(lhs) |= static_cast<underlying>(rhs));
+}
+
+// other operators go here
+enum class NetworkProtocols {
+    NONE = 0,
+    TCP  = 1 << 0,
+    UDP  = 1 << 1,
+
+    // other protocols go here
+};
+
+template <> struct EnableBinaryOperators<NetworkProtocols> {
+    static const bool m_enable = true;
+};
+
+
+class Network {
 
     bool isValidAddress(const std::string& potentialURL);
 };
