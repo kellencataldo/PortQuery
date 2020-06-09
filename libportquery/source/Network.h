@@ -7,8 +7,12 @@
 template<unsigned int... bitPositions> struct structuredBindingGen { };
 
 template<int... bitPositions> struct binaryFlag {
-    unsigned int value;
+    unsigned int m_value;
     static constexpr structuredBindingGen<bitPositions...> values = { };
+
+    bool isSet(const binaryFlag<bitPositions...> other) const {
+        return 0 != (m_value & other.m_value);
+    }
 };
 
 template<unsigned int... bitPositions> struct std::tuple_size<structuredBindingGen<bitPositions...>> : 
@@ -24,16 +28,16 @@ template<std::size_t position, unsigned int... bitPositions> binaryFlag<bitPosit
 }
 
 template <unsigned int... bitPositions> binaryFlag <bitPositions...> operator|(binaryFlag<bitPositions...> lhs, binaryFlag<bitPositions...> rhs ) { 
-    return { lhs.value | rhs.value }; 
+    return { lhs.m_value | rhs.m_value }; 
 }
 
 
 namespace Network {
-
-    using protocolBitPositions = binaryFlag<0,1>;
-    namespace protocols { auto [TCP, UDP] = protocolBitPositions::values; };
+    using protocolFlags = binaryFlag<0,1>;
+    struct Protocols { const auto [TCP, UDP] = protocolFlags::values; };
+   // struct networkProtocols { auto [TCP, UDP] = protocolFlags::values; };
+   
 
     bool isValidAddress(const std::string& potentialURL);
-    
-}
+};
 

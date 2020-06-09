@@ -5,7 +5,7 @@ template<class ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
-ASTNode Parser::parseSOSQLStatement() {
+SOSQLSelectStatement Parser::parseSOSQLStatement() {
 
     // SOSQL statements can obviously only begin with the "SELECT" keyword
     if (!std::holds_alternative<SELECTToken>(m_lexer.nextToken())) {
@@ -20,17 +20,15 @@ ASTNode Parser::parseSOSQLStatement() {
 }
 
 
-ASTNode Parser::parseColumnSelect() {
-
-    ASTNode columnSelect = std::make_shared<ASTColumnSelectNode>();
+SOSQLSelectStatement Parser::parseColumnSelect() {
 
     
 
-    return NULL;
+    return SOSQLSelectStatement();
 }
 
 
-ASTNode Parser::parseCountSelect() {
+SOSQLSelectStatement Parser::parseCountSelect() {
 
     // scan past the COUNT token
     m_lexer.nextToken();
@@ -42,7 +40,7 @@ ASTNode Parser::parseCountSelect() {
 
     // parse column list:::
 
-    return NULL;
+    return SOSQLSelectStatement();
 }
 
 

@@ -2,3 +2,4 @@ build
 _vimrc_local.vim
 to_do.txt
 tags
+.ycm_extra_conf.py
