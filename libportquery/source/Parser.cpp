@@ -22,9 +22,9 @@ SOSQLSelectStatement Parser::parseSOSQLStatement() {
 
 SOSQLSelectStatement Parser::parseColumnSelect() {
 
-    
-
-    return SOSQLSelectStatement();
+    SOSQLSelectStatement selectStatement{};
+    selectStatement.m_selectSet = parseSelectSet();
+    return selectStatement;
 }
 
 
@@ -38,12 +38,17 @@ SOSQLSelectStatement Parser::parseCountSelect() {
     }
 
 
-    // parse column list:::
+    // parse column list here
 
     return SOSQLSelectStatement();
 }
 
 
+SelectSet Parser::parseSelectSet() {
+
+    return SelectSet{};
+
+};
 /*
 ASTNode Parser::parseSetQuantifier() {
 

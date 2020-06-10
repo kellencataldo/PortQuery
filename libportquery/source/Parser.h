@@ -39,5 +39,7 @@ class Parser {
         SOSQLSelectStatement parseColumnSelect();
         SOSQLSelectStatement parseCountSelect();
 
+        SelectSet parseSelectSet();
+
         Lexer m_lexer;
 };
