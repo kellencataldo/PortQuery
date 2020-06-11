@@ -56,7 +56,8 @@ template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable,
 
 template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable, T>::type operator|=(T& lhs, const T rhs) {
     typedef typename std::underlying_type<T>::type underlying;
-    return static_cast<T>(static_cast<underlying>(lhs) |= static_cast<underlying>(rhs));
+    lhs = static_cast<T>(static_cast<underlying>(lhs) | static_cast<underlying>(rhs));
+    return lhs;
 }
 
 // other operators go here
