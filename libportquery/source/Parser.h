@@ -8,8 +8,6 @@
 
 
 struct SelectSet {
-    SelectSet() : m_selectPort(false), m_selectedProtocols(NetworkProtocols::NONE) { }
-
     bool m_selectPort;
     NetworkProtocols m_selectedProtocols;
 };
@@ -40,6 +38,7 @@ class Parser {
         SOSQLSelectStatement parseCountSelect();
 
         SelectSet parseSelectSet();
+        SelectSet parseSelectList();
 
         Lexer m_lexer;
 };
