@@ -9,27 +9,27 @@
 Token getKeywordTokenFromString(const std::string lexeme) {
 
     static const std::map<std::string, Token> keywordMap { 
-        {"ALL",     ALLToken{}},
-        {"AND",     ANDToken{}},
-        {"ANY",     ANYToken{}},
-        {"BETWEEN", BETWEENToken{}},
-        {"COUNT",   COUNTToken{}},
-        {"FROM",    FROMToken{}},
-        {"IF",      IFToken{}},
-        {"IN",      INToken{}},
-        {"IS",      ISToken{}},
-        {"LIKE",    LIKEToken{}},
-        {"LIMIT",   LIMITToken{}},
-        {"NOT",     NOTToken{}},
-        {"OR",      ORToken{}},
-        {"ORDER",   ORDERToken{}},
-        {"SELECT",  SELECTToken{}},
-        {"WHERE",   WHEREToken{}},
+        {"ALL",     ALLToken{ }},
+        {"AND",     ANDToken{ }},
+        {"ANY",     ANYToken{ }},
+        {"BETWEEN", BETWEENToken{ }},
+        {"COUNT",   COUNTToken{ }},
+        {"FROM",    FROMToken{ }},
+        {"IF",      IFToken{ }},
+        {"IN",      INToken{ }},
+        {"IS",      ISToken{ }},
+        {"LIKE",    LIKEToken{ }},
+        {"LIMIT",   LIMITToken{ }},
+        {"NOT",     NOTToken{ }},
+        {"OR",      ORToken{ }},
+        {"ORDER",   ORDERToken{ }},
+        {"SELECT",  SELECTToken{ }},
+        {"WHERE",   WHEREToken{ }},
 
         // these aren't really keywords
-        {"PORT",    ColumnToken{ ColumnToken::PORT }},
-        {"TCP",     ColumnToken{ ColumnToken::TCP }},
-        {"UDP",     ColumnToken{ ColumnToken::UDP }}
+        {"PORT",    PORTToken{ }},
+        {"TCP",     ProtocolToken{ NetworkProtocols::TCP }},
+        {"UDP",     ProtocolToken{ NetworkProtocols::UDP }}
     };
 
     auto keywordMapIter = keywordMap.find(lexeme);
@@ -224,11 +224,11 @@ Token Lexer::scanNextToken() {
     
     // Check to see if we have any punctuation tokens first.
     switch(*m_currentChar) {
-        case '*': return PunctuationToken<'*'>{};
-        case '(': return PunctuationToken<'('>{};
-        case ')': return PunctuationToken<')'>{};
-        case ',': return PunctuationToken<','>{};
-        case ';': return PunctuationToken<';'>{}; // return EOF here? this isn't being handled correctly.
+        case '*': m_currentChar++; return PunctuationToken<'*'>{ };
+        case '(': m_currentChar++; return PunctuationToken<'('>{ };
+        case ')': m_currentChar++; return PunctuationToken<')'>{ };
+        case ',': m_currentChar++; return PunctuationToken<','>{ };
+        case ';': m_currentChar++; return PunctuationToken<';'>{ }; // return EOF here? this isn't being handled correctly.
     }
    
 

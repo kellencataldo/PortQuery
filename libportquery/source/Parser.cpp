@@ -1,28 +1,52 @@
 #include "Parser.h"
 
+#include <iostream>
+
 // helper class for std::visit. Constructs a callable which accepts various types based on deduction
 template<class ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
-NetworkProtocols ConvertTokenColumnToNetworkProtocol(const ColumnToken::Column column) {
 
-    NetworkProtocols protocol = NetworkProtocols::NONE;
-    switch(column) {
-        
-        case ColumnToken::TCP:
-            protocol = NetworkProtocols::TCP;
-            break;
+std::string GetTokenString(const Token t) {
 
-        case ColumnToken::UDP:
-            protocol = NetworkProtocols::UDP;
-            break;
+    return std::visit(overloaded {
+            [=] (NumericToken n) { return std::to_string(n.m_value); },
+            // ComparisonToken, << fix this.
+            // [=] (UserToken u)    { return u.m_UserToken; },
+            [=] (ALLToken)       { return std::string("ALL"); },
+            [=] (ANDToken)       { return std::string("AND"); },
+            
+            [=] (ANYToken)       { return std::string("ANY"); },
+            [=] (BETWEENToken)   { return std::string("BETWEEN"); },
+            [=] (COUNTToken)     { return std::string("COUNT"); },
+            [=] (FROMToken)      { return std::string("FROM"); },
+            [=] (IFToken)        { return std::string("IF"); },
+/*
+           
+            INToken,
+            ISToken,
+            LIKEToken,
+            LIMITToken,
+            NOTToken,
+            ORToken,
+            ORDERToken,
+            SELECTToken,
+            WHEREToken,
+            PORTToken,
+            PunctuationToken<'*'>,
+            PunctuationToken<'('>,
+            PunctuationToken<')'>,
+            PunctuationToken<','>,
+            PunctuationToken<';'>,
+            */
 
-        case ColumnToken::PORT:
-            throw std::invalid_argument("Unable to convert token column to network protocol");
-    }
 
-    return protocol;
+            [=] (PunctuationToken<','>) { return std::string("[,]"); },
+
+            [=] (ProtocolToken) { return std::string("PROTOCOL TOKEN"); }, // more granularity please
+            [=] (auto) -> std::string { return std::string("[UNKNOWN TOKEN]"); } }, 
+            t);
 }
 
 
@@ -67,11 +91,12 @@ SOSQLSelectStatement Parser::parseCountSelect() {
 SelectSet Parser::parseSelectSet() {
 
     return std::visit(overloaded {
-        [=] (ColumnToken) { return parseSelectList(); },
-        [=] (PunctuationToken<'*'>) { return SelectSet{ true, (NetworkProtocols::TCP|NetworkProtocols::UDP)}; },
+            [=] (ProtocolToken)         { return parseSelectList(); },
+            [=] (PORTToken)             { return parseSelectList(); },
+            [=] (PunctuationToken<'*'>) { return SelectSet{ true, (NetworkProtocols::TCP|NetworkProtocols::UDP)}; },
 
-        // add in erroneous token here?
-        [=] (auto) -> SelectSet { throw std::invalid_argument("Unknown or invalid column selected"); } },
+            // add in erroneous token here?
+            [=] (auto) -> SelectSet     { throw std::invalid_argument("Unknown or invalid column selected"); } },
         m_lexer.peek());
 
 };
@@ -80,38 +105,34 @@ SelectSet Parser::parseSelectList() {
 
     SelectSet selectedColumns{false, NetworkProtocols::NONE};
 
-    while (bool moreColumns = true) {
-        
-        Token t = m_lexer.nextToken();
-        if (!std::holds_alternative<ColumnToken>(t)) {
+    bool moreColumns = true;
 
-            // add in erroneous token here?
-            throw std::invalid_argument("Unknown or invalid column selected");
-        }
+    while (moreColumns) {
 
-        ColumnToken column = std::get<ColumnToken>(t);
-        if (ColumnToken::PORT == column.m_column) { 
+        std::visit(overloaded { 
+                [&selectedColumns] (PORTToken) { 
+                    if (selectedColumns.m_selectPort) { throw std::invalid_argument("Duplicate PORT column specified"); }
+                    selectedColumns.m_selectPort = true; 
+                },
 
-            if (selectedColumns.m_selectPort) { 
-                throw std::invalid_argument("Duplicate column specified");
-            }
+                [&selectedColumns] (ProtocolToken p) {
+                    if (NetworkProtocols::NONE != (p.m_protocol & selectedColumns.m_selectedProtocols)) { 
+                        throw std::invalid_argument("Duplicate protocol colum specified"); }
+                    selectedColumns.m_selectedProtocols |= p.m_protocol;
+                },
 
-            selectedColumns.m_selectPort = true;
+                [=] (auto t) -> void { 
+                    std::string exceptionString = "Invalid token specified in select list: " + GetTokenString(t);
+                    throw std::invalid_argument(exceptionString);
+                } },
+                m_lexer.nextToken());
 
-        } else {
-
-            const NetworkProtocols protocol = ConvertTokenColumnToNetworkProtocol(column.m_column);
-            if (NetworkProtocols::NONE != (protocol & selectedColumns.m_selectedProtocols)) {
-                // add which erroneous token was selected here.
-                throw std::invalid_argument("Duplicate column specified");
-            }
-
-            selectedColumns.m_selectedProtocols |= protocol;
-        }
 
         if (std::holds_alternative<PunctuationToken<','>>(m_lexer.peek())) {
+
             m_lexer.nextToken();
-        } else {
+        } 
+        else {
 
             // if there are more columns to follow, it's someone elses problem
             moreColumns = false;

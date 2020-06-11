@@ -1,12 +1,13 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 #include <map>
 #include <variant>
 #include <optional>
 #include <functional>
 #include <algorithm>
+
+#include "Network.h"
 
 
 /* Other tokens that could be supported in the future
@@ -35,15 +36,9 @@ template <typename T> struct isElementPresent: private std::vector<T> {
 };
 
 
-struct ColumnToken {
+struct ProtocolToken {
 
-    enum Column {
-        PORT,
-        TCP,
-        UDP
-    };
-
-    Column m_column;
+    NetworkProtocols m_protocol;
 };
 
 // This token represents any numeric value.
@@ -57,7 +52,7 @@ struct ComparisonToken { std::function<uint16_t(const uint16_t, const uint16_t)>
 
 // This token represents a User string which contains valid characters
 // This could either be a table alias, a URL, a column alias, etc
-struct UserToken { std::string_view m_UserToken; };
+struct UserToken { std::string m_UserToken; };
 
 
 // Keyword tokens of all the supported SOSQL keywords
@@ -81,6 +76,10 @@ struct ORDERToken { };
 struct SELECTToken { };
 struct WHEREToken { };
 
+// This token represents the port column. Unlike the ProtocolTokens, it 
+// has no associated network protocol
+struct PORTToken { };
+
 
 // This token should be pretty self explanatory.
 struct EOFToken { };
@@ -99,7 +98,7 @@ using Token = std::variant<
     NumericToken,
     ComparisonToken,
     UserToken,
-    ColumnToken,
+    ProtocolToken,
 
     ALLToken,
     ANDToken,
@@ -118,6 +117,8 @@ using Token = std::variant<
     ORDERToken,
     SELECTToken,
     WHEREToken,
+
+    PORTToken,
 
     EOFToken,
 

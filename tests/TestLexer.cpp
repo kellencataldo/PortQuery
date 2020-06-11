@@ -259,19 +259,17 @@ TEST(RecognizeTokens, ColumnTokens) {
     Lexer lexer_T1{"PORT TCP UDP"};
 
     Token token_T1{lexer_T1.nextToken()}; // PORT
-    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T1));
-    ColumnToken Column_T1 = std::get<ColumnToken>(token_T1);
-    EXPECT_TRUE(ColumnToken::PORT == Column_T1.m_column);
+    EXPECT_TRUE(std::holds_alternative<PORTToken>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()}; // TCP
-    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T2));
-    ColumnToken column_T2 = std::get<ColumnToken>(token_T2);
-    EXPECT_TRUE(ColumnToken::TCP == column_T2.m_column);
+    ASSERT_TRUE(std::holds_alternative<ProtocolToken>(token_T2));
+    ProtocolToken protocol_T2 = std::get<ProtocolToken>(token_T2);
+    EXPECT_TRUE(NetworkProtocols::TCP == protocol_T2.m_protocol);
 
     Token token_T3{lexer_T1.nextToken()}; // UDP
-    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T3));
-    ColumnToken column_T3 = std::get<ColumnToken>(token_T3);
-    EXPECT_TRUE(ColumnToken::UDP == column_T3.m_column);
+    ASSERT_TRUE(std::holds_alternative<ProtocolToken>(token_T3));
+    ProtocolToken protocol_T3 = std::get<ProtocolToken>(token_T3);
+    EXPECT_TRUE(NetworkProtocols::UDP == protocol_T3.m_protocol);
 
     Token token_T20{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
@@ -281,7 +279,7 @@ TEST(RecognizeTokens, ColumnTokens) {
 TEST(LexerFunctionality, Peek) {
 
     // query string holding one valid token with some space after, past that EOF is returned
-    Lexer lexer_T1{"SELECT     "};
+    Lexer lexer_T1{"SELECT ,   "};
 
     Token token_T1{lexer_T1.peek()};
     EXPECT_TRUE(std::holds_alternative<SELECTToken>(token_T1));
@@ -290,8 +288,14 @@ TEST(LexerFunctionality, Peek) {
     ASSERT_TRUE(std::holds_alternative<SELECTToken>(token_T2));
 
     Token token_T3{lexer_T1.peek()};
-    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T3));
+    EXPECT_TRUE(std::holds_alternative<PunctuationToken<','>>(token_T3));
 
     Token token_T4{lexer_T1.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T4));
+    ASSERT_TRUE(std::holds_alternative<PunctuationToken<','>>(token_T4));
+
+    Token token_T5{lexer_T1.peek()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T5));
+
+    Token token_T6{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T6));
 }
