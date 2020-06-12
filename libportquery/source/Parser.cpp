@@ -31,12 +31,13 @@ std::string GetTokenString(const Token t) {
                 [=] (SELECTToken)     { return std::string("[SELECT KEYWORD]");},
                 [=] (WHEREToken)      { return std::string("[WHERE KEYWORD]"); },
                 [=] (PORTToken)       { return std::string("[PORT  KEYWORD]"); },
+                [=] (ProtocolToken)   { return std::string("[PROTOCOL TOKEN]"); }, // more granularity please
+                [=] (EOFToken)        { return std::string("[END OF INPUT]"); },
                 [=] (PunctuationToken<'*'>) { return std::string("[ * ]"); },
                 [=] (PunctuationToken<'('>) { return std::string("[ ( ]"); }, 
                 [=] (PunctuationToken<')'>) { return std::string("[ ) ]"); },
                 [=] (PunctuationToken<';'>) { return std::string("[ ; ]"); }, 
                 [=] (PunctuationToken<','>) { return std::string("[ , ]"); },
-                [=] (ProtocolToken) { return std::string("[PROTOCOL TOKEN]"); }, // more granularity please
                 [=] (auto) -> std::string { return std::string("[UNKNOWN TOKEN]"); } }, 
             t);
     }
@@ -50,45 +51,40 @@ SOSQLSelectStatement Parser::parseSOSQLStatement() {
         throw std::invalid_argument("Only SELECT statements are handled. Statement must begin with SELECT");
     }
 
-    return std::visit(overloaded {
-            [=] (COUNTToken)  { return parseCountSelect(); },
-            [=] (auto) { return parseColumnSelect(); } }, 
-            m_lexer.peek());
+    return parseSimpleSelect();
+
 }
 
 
-SOSQLSelectStatement Parser::parseColumnSelect() {
-    SOSQLSelectStatement selectStatement{};
-    selectStatement.m_selectSet = parseSelectSet();
+SOSQLSelectStatement Parser::parseSimpleSelect() {
+
+
+    SOSQLSelectStatement selectStatement { };
+    selectStatement.m_selectSet = parseSelectSetQuantifier();
+
+
+
+
+    // parse where statement here.
+
+
+
+
     return selectStatement;
 }
 
 
-SOSQLSelectStatement Parser::parseCountSelect() {
-
-    // scan past the COUNT token
-    m_lexer.nextToken();
-    if (!std::holds_alternative<PunctuationToken<'('>>(m_lexer.nextToken())) {
-
-        throw std::invalid_argument("COUNT aggregates must be enclosed in parentheses");
-    }
-
-
-    // parse column list here
-
-    return SOSQLSelectStatement();
-}
-
-
-SelectSet Parser::parseSelectSet() {
+SelectSet Parser::parseSelectSetQuantifier() {
 
     return std::visit(overloaded {
             [=] (ProtocolToken)         { return parseSelectList(); },
             [=] (PORTToken)             { return parseSelectList(); },
             [=] (PunctuationToken<'*'>) { return SelectSet{ true, (NetworkProtocols::TCP|NetworkProtocols::UDP)}; },
 
-            // add in erroneous token here?
-            [=] (auto) -> SelectSet     { throw std::invalid_argument("Unknown or invalid column selected"); } },
+            [=] (auto t) -> SelectSet { 
+                const std::string exceptionString = "Invalid token in select list: " + GetTokenString(t);
+                throw std::invalid_argument(exceptionString); 
+            } },
         m_lexer.peek());
 
 };
@@ -97,19 +93,21 @@ SelectSet Parser::parseSelectList() {
 
     SelectSet selectedColumns{false, NetworkProtocols::NONE};
 
-    bool moreColumns = true;
-
-    while (moreColumns) {
-
+    // nextToken() gets advanced in the for loop declaration here only if a common token is 
+    // detected after whatever column token gets scanned in the body of the for loop.
+    for (bool moreColumns = true; moreColumns; m_lexer.nextToken()) {
         std::visit(overloaded { 
                 [&selectedColumns] (PORTToken) { 
-                    if (selectedColumns.m_selectPort) { throw std::invalid_argument("Duplicate PORT column specified"); }
+                    if (selectedColumns.m_selectPort) { 
+                        throw std::invalid_argument("Duplicate PORT column specified");
+                    }
                     selectedColumns.m_selectPort = true; 
                 },
 
                 [&selectedColumns] (ProtocolToken p) {
                     if (NetworkProtocols::NONE != (p.m_protocol & selectedColumns.m_selectedProtocols)) { 
-                        throw std::invalid_argument("Duplicate protocol colum specified"); }
+                        throw std::invalid_argument("Duplicate protocol column specified"); 
+                    }
                     selectedColumns.m_selectedProtocols |= p.m_protocol;
                 },
 
@@ -117,18 +115,12 @@ SelectSet Parser::parseSelectList() {
                     std::string exceptionString = "Invalid token specified in select list: " + GetTokenString(t);
                     throw std::invalid_argument(exceptionString);
                 } },
-                m_lexer.nextToken());
+           
+            m_lexer.nextToken());
 
-
-        if (std::holds_alternative<PunctuationToken<','>>(m_lexer.peek())) {
-
-            m_lexer.nextToken();
-        } 
-        else {
-
-            // if there are more columns to follow, it's someone elses problem
-            moreColumns = false;
-        }
+        // if there is a comma here, there are more columns to scan. If there is not a comma,
+        // parsing the column list is complete and the for loop is exited
+        moreColumns = std::holds_alternative<PunctuationToken<','>>(m_lexer.peek());
     }
 
     return selectedColumns;
@@ -146,5 +138,19 @@ ASTNode Parser::parseSetQuantifier() {
             m_lexer.peek());
 }
 
-*/
+SOSQLSelectStatement Parser::parseCountSelect() {
 
+    // scan past the COUNT token
+    m_lexer.nextToken();
+    if (!std::holds_alternative<PunctuationToken<'('>>(m_lexer.nextToken())) {
+
+        throw std::invalid_argument("COUNT aggregates must be enclosed in parentheses");
+    }
+
+
+    // parse column list here
+
+    return SOSQLSelectStatement();
+}
+
+*/

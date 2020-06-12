@@ -34,10 +34,10 @@ class Parser {
 
 
     private:
-        SOSQLSelectStatement parseColumnSelect();
-        SOSQLSelectStatement parseCountSelect();
+        SOSQLSelectStatement parseSimpleSelect();
+//        SOSQLSelectStatement parseCountSelect();
 
-        SelectSet parseSelectSet();
+        SelectSet parseSelectSetQuantifier();
         SelectSet parseSelectList();
 
         Lexer m_lexer;
