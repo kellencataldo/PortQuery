@@ -11,43 +11,35 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 std::string GetTokenString(const Token t) {
 
     return std::visit(overloaded {
-            [=] (NumericToken n) { return std::to_string(n.m_value); },
-            // ComparisonToken, << fix this.
-            // [=] (UserToken u)    { return u.m_UserToken; },
-            [=] (ALLToken)       { return std::string("ALL"); },
-            [=] (ANDToken)       { return std::string("AND"); },
-            
-            [=] (ANYToken)       { return std::string("ANY"); },
-            [=] (BETWEENToken)   { return std::string("BETWEEN"); },
-            [=] (COUNTToken)     { return std::string("COUNT"); },
-            [=] (FROMToken)      { return std::string("FROM"); },
-            [=] (IFToken)        { return std::string("IF"); },
-/*
-           
-            INToken,
-            ISToken,
-            LIKEToken,
-            LIMITToken,
-            NOTToken,
-            ORToken,
-            ORDERToken,
-            SELECTToken,
-            WHEREToken,
-            PORTToken,
-            PunctuationToken<'*'>,
-            PunctuationToken<'('>,
-            PunctuationToken<')'>,
-            PunctuationToken<','>,
-            PunctuationToken<';'>,
-            */
-
-
-            [=] (PunctuationToken<','>) { return std::string("[,]"); },
-
-            [=] (ProtocolToken) { return std::string("PROTOCOL TOKEN"); }, // more granularity please
-            [=] (auto) -> std::string { return std::string("[UNKNOWN TOKEN]"); } }, 
+                [=] (NumericToken n)  { return std::to_string(n.m_value); },
+                [=] (ComparisonToken) { return std::string("[COMPARISON TOKEN]"); },
+                [=] (UserToken u)     { return u.m_UserToken; },
+                [=] (ALLToken)        { return std::string("[ALL KEYWORD]"); },
+                [=] (ANDToken)        { return std::string("AND KEYWORD]"); },
+                [=] (ANYToken)        { return std::string("[ANY KEYWORD]"); },
+                [=] (BETWEENToken)    { return std::string("[BETWEEN KEYWORD]"); },
+                [=] (COUNTToken)      { return std::string("[COUNT KEYWORD]"); },
+                [=] (FROMToken)       { return std::string("[FROM KEYWORD]"); },
+                [=] (IFToken)         { return std::string("[IF KEYWORD]"); },
+                [=] (INToken)         { return std::string("[IN KEYWORD]"); },
+                [=] (ISToken)         { return std::string("[IS KEYWORD]"); },
+                [=] (LIKEToken)       { return std::string("[LIKE KEYWORD]"); },
+                [=] (LIMITToken)      { return std::string("[LIMIT KEYWORD]"); },
+                [=] (NOTToken)        { return std::string("[NOT KEYWORD]"); },
+                [=] (ORToken)         { return std::string("[OR KEYWORD]"); },
+                [=] (ORDERToken)      { return std::string("[ORDER KEYWORD]"); },
+                [=] (SELECTToken)     { return std::string("[SELECT KEYWORD]");},
+                [=] (WHEREToken)      { return std::string("[WHERE KEYWORD]"); },
+                [=] (PORTToken)       { return std::string("[PORT  KEYWORD]"); },
+                [=] (PunctuationToken<'*'>) { return std::string("[ * ]"); },
+                [=] (PunctuationToken<'('>) { return std::string("[ ( ]"); }, 
+                [=] (PunctuationToken<')'>) { return std::string("[ ) ]"); },
+                [=] (PunctuationToken<';'>) { return std::string("[ ; ]"); }, 
+                [=] (PunctuationToken<','>) { return std::string("[ , ]"); },
+                [=] (ProtocolToken) { return std::string("[PROTOCOL TOKEN]"); }, // more granularity please
+                [=] (auto) -> std::string { return std::string("[UNKNOWN TOKEN]"); } }, 
             t);
-}
+    }
 
 
 SOSQLSelectStatement Parser::parseSOSQLStatement() {
