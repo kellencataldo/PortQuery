@@ -179,13 +179,13 @@ Token Lexer::scanComparisonToken() {
     m_currentChar++;
     if(reachedTokenEnd() || (*(m_currentChar++) == isElementPresent<char>{'=', '>'} && reachedTokenEnd())) {
 
-        static std::map<std::string, std::function<uint16_t(const uint16_t, const uint16_t)>> operatorMap{
-            {"=" , [](const uint16_t a, const uint16_t b) { return a == b; } },
-            {">" , [](const uint16_t a, const uint16_t b) { return a >  b; } },
-            {"<" , [](const uint16_t a, const uint16_t b) { return a <  b; } },
-            {">=", [](const uint16_t a, const uint16_t b) { return a >= b; } },
-            {"<=", [](const uint16_t a, const uint16_t b) { return a <= b; } },
-            {"<>", [](const uint16_t a, const uint16_t b) { return a != b; } }
+        static std::map<std::string, ComparisonToken::OpType> operatorMap {
+            {"=" , ComparisonToken::OP_EQ},
+            {">" , ComparisonToken::OP_GT},
+            {"<" , ComparisonToken::OP_LT},
+            {">=", ComparisonToken::OP_GTE},
+            {"<=", ComparisonToken::OP_LTE},
+            {"<>", ComparisonToken::OP_NE}
         };
 
 

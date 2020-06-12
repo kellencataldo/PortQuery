@@ -65,34 +65,32 @@ TEST(RecognizeTokens, ComparisonTokens) {
     Token token_T1{lexer_T1.nextToken()}; // =
     ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T1));
     ComparisonToken comparison_T1 = std::get<ComparisonToken>(token_T1);
-    EXPECT_TRUE(comparison_T1.m_compareFunc(1, 1));
+    EXPECT_TRUE(ComparisonToken::OP_EQ == comparison_T1.m_opType);
 
     Token token_T2{lexer_T1.nextToken()}; // >
     ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T2));
     ComparisonToken comparison_T2 = std::get<ComparisonToken>(token_T2);
-    EXPECT_TRUE(comparison_T2.m_compareFunc(2, 1));
+    EXPECT_TRUE(ComparisonToken::OP_GT == comparison_T2.m_opType);
 
     Token token_T3{lexer_T1.nextToken()}; // <
     ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T3));
     ComparisonToken comparison_T3 = std::get<ComparisonToken>(token_T3);
-    EXPECT_TRUE(comparison_T3.m_compareFunc(1, 2));
+    EXPECT_TRUE(ComparisonToken::OP_LT == comparison_T3.m_opType);
 
     Token token_T4{lexer_T1.nextToken()}; // >=
     ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T4));
     ComparisonToken comparison_T4 = std::get<ComparisonToken>(token_T4);
-    EXPECT_TRUE(comparison_T4.m_compareFunc(2, 1));
-    EXPECT_TRUE(comparison_T4.m_compareFunc(1, 1));
+    EXPECT_TRUE(ComparisonToken::OP_GTE == comparison_T4.m_opType);
 
     Token token_T5{lexer_T1.nextToken()}; // <=
     ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T5));
     ComparisonToken comparison_T5 = std::get<ComparisonToken>(token_T5);
-    EXPECT_TRUE(comparison_T5.m_compareFunc(1, 2));
-    EXPECT_TRUE(comparison_T5.m_compareFunc(1, 1));
+    EXPECT_TRUE(ComparisonToken::OP_LTE == comparison_T5.m_opType);
 
     Token token_T6{lexer_T1.nextToken()}; // <>
     ASSERT_TRUE(std::holds_alternative<ComparisonToken>(token_T6));
     ComparisonToken comparison_T6 = std::get<ComparisonToken>(token_T6);
-    EXPECT_TRUE(comparison_T6.m_compareFunc(2, 1));
+    EXPECT_TRUE(ComparisonToken::OP_NE == comparison_T6.m_opType);
 
     Token token_T7{lexer_T1.nextToken()}; // == 
     EXPECT_TRUE(std::holds_alternative<ErrorToken>(token_T7));

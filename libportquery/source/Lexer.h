@@ -48,7 +48,22 @@ struct ProtocolToken {
 struct NumericToken { uint16_t m_value; };
 
 // This token represents a binary comparison operator such as !=
-struct ComparisonToken { std::function<uint16_t(const uint16_t, const uint16_t)> m_compareFunc; };
+struct ComparisonToken {
+
+    // This enum represents all the different comparison operations supported in SOSQL
+    // Occasionally, other tokens will make use of this enum as well, such as an IS
+    // keyword that appears in a WHERE clause (it gets converted to EQ
+    enum OpType {
+        OP_EQ,  // ==, or IS
+        OP_GT,  // >
+        OP_LT,  // <
+        OP_GTE, // >=
+        OP_LTE, // <=
+        OP_NE   // <>, or IS NOT
+    };
+
+    OpType m_opType;
+};
 
 // This token represents a User string which contains valid characters
 // This could either be a table alias, a URL, a column alias, etc
