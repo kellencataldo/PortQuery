@@ -60,16 +60,17 @@ SOSQLSelectStatement Parser::parseSimpleSelect() {
 
 
     SOSQLSelectStatement selectStatement { };
+
     selectStatement.m_selectSet = parseSelectSetQuantifier();
+
+    selectStatement.m_tableReference = parseTableReference();
+
+    // following the select set is the table reference
 
 
 
 
     // parse where statement here.
-
-
-
-
     return selectStatement;
 }
 
@@ -118,13 +119,31 @@ SelectSet Parser::parseSelectList() {
            
             m_lexer.nextToken());
 
-        // if there is a comma here, there are more columns to scan. If there is not a comma,
+        // If there is a comma here, there are more columns to scan. If there is not a comma,
         // parsing the column list is complete and the for loop is exited
         moreColumns = std::holds_alternative<PunctuationToken<','>>(m_lexer.peek());
     }
 
     return selectedColumns;
 }
+
+
+std::string Parser::parseTableReference() {
+
+    if (!std::holds_alternative<FROMToken>(m_lexer.nextToken())) {
+
+        // maybe conditionally advance here for better error messaging?
+        throw std::invalid_argument("FROM token not following column list, invalid token specified");
+    }
+
+    return std::visit(overloaded {
+            [=] (UserToken u)  { return u.m_UserToken; },
+            [=] (auto t) -> std::string { 
+                throw std::invalid_argument("Invalid token following FROM keyword" + GetTokenString(t)); } 
+            }, 
+        m_lexer.nextToken());
+}
+
 
 
 /*

@@ -7,18 +7,37 @@
 #include "Network.h"
 
 
+struct ORExpression;
+struct ANDExpression;
+
+
+using SOSQLExpression = std::variant<
+    std::shared_ptr<ORExpression>,
+    std::shared_ptr<ANDExpression>
+    >;
+
+
+struct ORExpression {
+
+    SOSQLExpression ANDLeft;
+    SOSQLExpression ANDRight;
+};
+
+struct ANDExpression {};
+
+
 struct SelectSet {
     bool m_selectPort;
     NetworkProtocols m_selectedProtocols;
 };
 
-
-// The three SelectNode structs form the base of the abstract syntax tree
-// The parse function could return 
+// and expression
+// or expression
+//
 
 struct SelectStatement {
-
     SelectSet m_selectSet;
+    std::string m_tableReference;
 };
 
 typedef SelectStatement SOSQLSelectStatement;
@@ -39,6 +58,8 @@ class Parser {
 
         SelectSet parseSelectSetQuantifier();
         SelectSet parseSelectList();
+
+        std::string parseTableReference();
 
         Lexer m_lexer;
 };
