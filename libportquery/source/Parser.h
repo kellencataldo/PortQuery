@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <tuple>
 
 #include "Lexer.h"
 #include "Network.h"
@@ -9,13 +10,16 @@
 
 struct ORExpression;
 struct ANDExpression;
-struct NULLExpression;
+struct BETWEENExpression;
 struct ComparisonExpression;
+
+struct NULLExpression;
 
 
 using SOSQLExpression = std::variant<
     std::shared_ptr<ORExpression>,
     std::shared_ptr<ANDExpression>,
+    std::shared_ptr<BETWEENExpression>,
     std::shared_ptr<ComparisonExpression>,
     // special case, no WHERE clause
     std::shared_ptr<NULLExpression>
@@ -37,22 +41,27 @@ struct ANDExpression {
     SOSQLExpression right;
 };
 
-
-
-
-
-struct SelectSet {
-    bool m_selectPort;
-    NetworkProtocols m_selectedProtocols;
+/*
+struct BETWEENExpression {
+    uint16_t m_lowerBound;
+    uint16_t m_upperBound;
+    ColumnToken m_comparisonColumn;
+    // column token here.
 };
 
-// and expression
-// or expression
-//
+*/
+
+
+
 
 struct SelectStatement {
-    SelectSet m_selectSet;
+
+    bool m_selectPort;
+
+    NetworkProtocols m_selectedProtocols;
+
     std::string m_tableReference;
+
     SOSQLExpression m_tableExpression;
 };
 
@@ -69,11 +78,9 @@ class Parser {
 
 
     private:
-        SOSQLSelectStatement parseSimpleSelect();
-//        SOSQLSelectStatement parseCountSelect();
 
-        SelectSet parseSelectSetQuantifier();
-        SelectSet parseSelectList();
+        std::tuple<bool, NetworkProtocols> parseSelectSetQuantifier();
+        std::tuple<bool, NetworkProtocols> parseSelectList();
 
         std::string parseTableReference();
 
