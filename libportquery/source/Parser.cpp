@@ -58,7 +58,6 @@ SOSQLSelectStatement Parser::parseSOSQLStatement() {
 
 SOSQLSelectStatement Parser::parseSimpleSelect() {
 
-
     SOSQLSelectStatement selectStatement { };
 
     selectStatement.m_selectSet = parseSelectSetQuantifier();
@@ -66,12 +65,46 @@ SOSQLSelectStatement Parser::parseSimpleSelect() {
     selectStatement.m_tableReference = parseTableReference();
 
     // following the select set is the table reference
+    
+    
 
-
-
-
+    // parse end here, check for EOF and semicolon
     // parse where statement here.
     return selectStatement;
+}
+
+
+SOSQLExpression Parser::parseTableExpression() {
+
+
+    if (!std::holds_alternative<WHEREToken>(m_lexer.peek())) {
+
+        return std::make_shared<NULLExpression>();
+    }
+
+    m_lexer.nextToken(); // this is the WHERE token;
+    return parseORExpression();
+}
+
+
+SOSQLExpression Parser::parseORExpression() {
+
+    SOSQLExpression expression = parseANDExpression();
+    while (std::holds_alternative<ORToken>(m_lexer.peek())) {
+
+        m_lexer.nextToken(); // scan past or token
+        SOSQLExpression right = parseANDExpression();
+        expression = std::make_shared<ORExpression>(ORExpression{expression, right});
+    }
+
+
+    return expression;
+}
+
+
+SOSQLExpression Parser::parseANDExpression() {
+
+    return std::make_shared<NULLExpression>();
 }
 
 

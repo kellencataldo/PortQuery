@@ -9,21 +9,36 @@
 
 struct ORExpression;
 struct ANDExpression;
+struct NULLExpression;
+struct ComparisonExpression;
 
 
 using SOSQLExpression = std::variant<
     std::shared_ptr<ORExpression>,
-    std::shared_ptr<ANDExpression>
+    std::shared_ptr<ANDExpression>,
+    std::shared_ptr<ComparisonExpression>,
+    // special case, no WHERE clause
+    std::shared_ptr<NULLExpression>
     >;
 
 
-struct ORExpression {
+// what should this be?
+struct NULLExpression { };
 
-    SOSQLExpression ANDLeft;
-    SOSQLExpression ANDRight;
+
+struct ORExpression {
+    SOSQLExpression left;
+    SOSQLExpression right;
+    
 };
 
-struct ANDExpression {};
+struct ANDExpression {
+    SOSQLExpression left;
+    SOSQLExpression right;
+};
+
+
+
 
 
 struct SelectSet {
@@ -38,6 +53,7 @@ struct SelectSet {
 struct SelectStatement {
     SelectSet m_selectSet;
     std::string m_tableReference;
+    SOSQLExpression m_tableExpression;
 };
 
 typedef SelectStatement SOSQLSelectStatement;
@@ -60,6 +76,10 @@ class Parser {
         SelectSet parseSelectList();
 
         std::string parseTableReference();
+
+        SOSQLExpression parseTableExpression();
+        SOSQLExpression parseORExpression();
+        SOSQLExpression parseANDExpression();
 
         Lexer m_lexer;
 };
