@@ -138,19 +138,11 @@ std::tuple<bool, NetworkProtocols> Parser::parseSelectList() {
            
             m_lexer.nextToken());
 
-        // If there is a comma here, there are more columns to scan. If there is not a comma,
-        // parsing the column list is complete and the for loop is exited
+        // If there is a comma here, there are more columns to scan
         moreColumns = std::holds_alternative<PunctuationToken<','>>(m_lexer.peek());
         if(moreColumns) {
             m_lexer.nextToken();
         }
-    }
-
-#include <iostream>
-
-    if(std::holds_alternative<UserToken>(m_lexer.peek())) {
-        std::cout << "FUUUUUUUUUUUUUUUUUUUUUUUUUUUCK";
-
     }
 
     return { selectPort, selectedProtocols };
