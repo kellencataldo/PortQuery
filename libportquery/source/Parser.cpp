@@ -116,8 +116,8 @@ std::tuple<bool, NetworkProtocols> Parser::parseSelectList() {
     
     NetworkProtocols selectedProtocols = NetworkProtocols::NONE;
     bool selectPort = false;
-    bool moreColumns = true;
 
+    bool moreColumns = true;
     while (moreColumns) {
         std::visit(overloaded { 
                 [&selectPort] (PORTToken) { 

@@ -8,14 +8,64 @@
 #include "Network.h"
 
 
-struct ORExpression;
-struct ANDExpression;
-struct BETWEENExpression;
-struct ComparisonExpression;
+template <typename T> void UNUSED_PARAMETER(T &&) { };
 
-struct NULLExpression;
+struct Terminal{ };
+//
+struct BaseExpression {
 
+    virtual bool shouldSubmitForScan(const uint16_t port) const = 0;
+};
 
+using SOSQLExpression = std::shared_ptr<BaseExpression>;
+
+struct ORExpression : BaseExpression {
+
+    virtual bool shouldSubmitForScan(const uint16_t port) const {
+        return left->shouldSubmitForScan(port) || right->shouldSubmitForScan(port);
+    }
+
+    SOSQLExpression left;
+    SOSQLExpression right;
+};
+
+struct ANDExpression : BaseExpression {
+
+    virtual bool shouldSubmitForScan(const uint16_t port) const {
+        return left->shouldSubmitForScan(port) && right->shouldSubmitForScan(port);
+    }
+
+    SOSQLExpression left;
+    SOSQLExpression right;
+};
+
+struct BETWEENExpression : BaseExpression {
+
+    virtual bool shouldSubmitForScan(const uint16_t port) const {
+        return (port >= m_lowerBound) && (port <= m_upperBound);
+    }
+
+    uint16_t m_lowerBound;
+    uint16_t m_upperBound;
+};
+
+struct ComparisonExpression : BaseExpression {
+
+    virtual bool shouldSubmitForScan(const uint16_t port) const;
+
+    Terminal m_lhs;
+    Terminal m_rhs; 
+};
+
+struct NULLExpression : BaseExpression {
+
+    virtual bool shouldSubmitForScan(const uint16_t port) const {
+        UNUSED_PARAMETER(port);
+        return true;
+    }
+};
+
+/*
 using SOSQLExpression = std::variant<
     std::shared_ptr<ORExpression>,
     std::shared_ptr<ANDExpression>,
@@ -24,34 +74,7 @@ using SOSQLExpression = std::variant<
     // special case, no WHERE clause
     std::shared_ptr<NULLExpression>
     >;
-
-
-// what should this be?
-struct NULLExpression { };
-
-
-struct ORExpression {
-    SOSQLExpression left;
-    SOSQLExpression right;
-    
-};
-
-struct ANDExpression {
-    SOSQLExpression left;
-    SOSQLExpression right;
-};
-
-/*
-struct BETWEENExpression {
-    uint16_t m_lowerBound;
-    uint16_t m_upperBound;
-    ColumnToken m_comparisonColumn;
-    // column token here.
-};
-
 */
-
-
 
 
 struct SelectStatement {
