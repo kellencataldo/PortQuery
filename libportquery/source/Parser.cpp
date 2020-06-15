@@ -7,6 +7,8 @@ template<class ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
+template<typename T> bool MATCH(const Token t) { return std::holds_alternative<T>(t); }
+
 
 std::string getTokenString(const Token t) {
 
@@ -46,7 +48,7 @@ std::string getTokenString(const Token t) {
 SOSQLSelectStatement Parser::parseSOSQLStatement() {
 
     // SOSQL statements can obviously only begin with the "SELECT" keyword
-    if (!std::holds_alternative<SELECTToken>(m_lexer.nextToken())) {
+    if (!MATCH<SELECTToken>(m_lexer.nextToken())) {
 
         throw std::invalid_argument("Only SELECT statements are handled. Statement must begin with SELECT");
     }
@@ -65,7 +67,7 @@ SOSQLSelectStatement Parser::parseSOSQLStatement() {
 SOSQLExpression Parser::parseTableExpression() {
 
 
-    if (!std::holds_alternative<WHEREToken>(m_lexer.peek())) {
+    if (!MATCH<WHEREToken>(m_lexer.peek())) {
 
         return std::make_shared<NULLExpression>();
     }
@@ -78,7 +80,7 @@ SOSQLExpression Parser::parseTableExpression() {
 SOSQLExpression Parser::parseORExpression() {
 
     SOSQLExpression expression = parseANDExpression();
-    while (std::holds_alternative<ORToken>(m_lexer.peek())) {
+    while (MATCH<ORToken>(m_lexer.peek())) {
 
         m_lexer.nextToken(); // scan past or token
         SOSQLExpression right = parseANDExpression();
@@ -92,9 +94,71 @@ SOSQLExpression Parser::parseORExpression() {
 
 SOSQLExpression Parser::parseANDExpression() {
 
-    return std::make_shared<NULLExpression>();
+    SOSQLExpression expression = parseBooleanFactor();
+    while (MATCH<ANDToken>(m_lexer.peek())) {
+
+        m_lexer.nextToken(); // scan past and token
+        SOSQLExpression right = parseBooleanFactor();
+        expression = std::make_shared<ANDExpression>(ANDExpression{expression, right});
+    }
+
+
+    return expression;
 }
 
+
+SOSQLExpression Parser::parseBooleanFactor() {
+
+    if(MATCH<NOTToken>(m_lexer.peek())) {
+        m_lexer.nextToken();
+        return std::make_shared<NOTExpression>(NOTExpression{parseBooleanExpression()});
+    }
+
+    return parseBooleanFactor();
+}
+
+
+SOSQLExpression Parser::parseBooleanExpression() {
+
+    const Token lhs = m_lexer.nextToken();
+    if (!MATCH<ProtocolToken>(lhs) && !MATCH<PORTToken>(lhs) && !MATCH<NumericToken>(lhs)) {
+
+        throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(lhs));
+    }
+
+    else if (!MATCH<PORTToken>(lhs) && MATCH<BETWEENToken>(m_lexer.peek())) {
+
+        throw std::invalid_argument("Only the PORT column can be used in a BETWEEN expression");
+    }
+
+    return std::visit(overloaded {
+            [=] (ComparisonToken) { return parseComparisonExpression(lhs); },
+            [=] (ISToken)             { return parseISExpression(lhs); },
+            [=] (BETWEENToken) {  return parseBETWEENExpression(lhs); }, 
+            [=] (auto const t) -> SOSQLExpression {
+                const std::string exceptionString = "Invalid operator token in expression: " + getTokenString(t);
+                throw std::invalid_argument(exceptionString); 
+            } },
+        m_lexer.nextToken());
+}
+
+
+SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
+    UNUSED_PARAMETER(lhs);
+    return NULL;
+}
+
+
+SOSQLExpression Parser::parseISExpression(const Token lhs) {
+    UNUSED_PARAMETER(lhs);
+    return NULL;
+}
+
+
+SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
+    UNUSED_PARAMETER(lhs);
+    return NULL;
+}
 
 std::tuple<bool, NetworkProtocols> Parser::parseSelectSetQuantifier() {
 
@@ -139,7 +203,7 @@ std::tuple<bool, NetworkProtocols> Parser::parseSelectList() {
             m_lexer.nextToken());
 
         // If there is a comma here, there are more columns to scan
-        moreColumns = std::holds_alternative<PunctuationToken<','>>(m_lexer.peek());
+        moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
         if(moreColumns) {
             m_lexer.nextToken();
         }
@@ -152,7 +216,7 @@ std::tuple<bool, NetworkProtocols> Parser::parseSelectList() {
 std::string Parser::parseTableReference() {
 
     const Token t = m_lexer.nextToken();
-    if (!std::holds_alternative<FROMToken>(t)) {
+    if (!MATCH<FROMToken>(t)) {
         const std::string exceptionString = "FROM token not following column list, invalid token specified: " + getTokenString(t);
         throw std::invalid_argument(exceptionString);
     }

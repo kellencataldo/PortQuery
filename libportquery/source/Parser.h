@@ -10,7 +10,6 @@
 
 template <typename T> void UNUSED_PARAMETER(T &&) { };
 
-struct Terminal{ };
 //
 struct BaseExpression {
 
@@ -21,22 +20,37 @@ using SOSQLExpression = std::shared_ptr<BaseExpression>;
 
 struct ORExpression : BaseExpression {
 
+    ORExpression(const SOSQLExpression left, const SOSQLExpression right) : m_left(left), m_right(right) { }
+
     virtual bool shouldSubmitForScan(const uint16_t port) const {
-        return left->shouldSubmitForScan(port) || right->shouldSubmitForScan(port);
+        return m_left->shouldSubmitForScan(port) || m_right->shouldSubmitForScan(port);
     }
 
-    SOSQLExpression left;
-    SOSQLExpression right;
+    SOSQLExpression m_left;
+    SOSQLExpression m_right;
 };
 
 struct ANDExpression : BaseExpression {
 
+    ANDExpression(const SOSQLExpression left, const SOSQLExpression right) : m_left(left), m_right(right) { }
+
     virtual bool shouldSubmitForScan(const uint16_t port) const {
-        return left->shouldSubmitForScan(port) && right->shouldSubmitForScan(port);
+        return m_left->shouldSubmitForScan(port) && m_right->shouldSubmitForScan(port);
     }
 
-    SOSQLExpression left;
-    SOSQLExpression right;
+    SOSQLExpression m_left;
+    SOSQLExpression m_right;
+};
+
+struct NOTExpression : BaseExpression {
+
+    NOTExpression(const SOSQLExpression expr) : m_expr(expr) { }
+
+    virtual bool shouldSubmitForScan(const uint16_t port) const {
+        return m_expr->shouldSubmitForScan(port);
+    }
+
+    SOSQLExpression m_expr;
 };
 
 struct BETWEENExpression : BaseExpression {
@@ -53,8 +67,9 @@ struct ComparisonExpression : BaseExpression {
 
     virtual bool shouldSubmitForScan(const uint16_t port) const;
 
-    Terminal m_lhs;
-    Terminal m_rhs; 
+    ComparisonToken::OpType op;
+    Token m_LHSTerminal;
+    Token m_RHSTerminal;
 };
 
 struct NULLExpression : BaseExpression {
@@ -64,17 +79,6 @@ struct NULLExpression : BaseExpression {
         return true;
     }
 };
-
-/*
-using SOSQLExpression = std::variant<
-    std::shared_ptr<ORExpression>,
-    std::shared_ptr<ANDExpression>,
-    std::shared_ptr<BETWEENExpression>,
-    std::shared_ptr<ComparisonExpression>,
-    // special case, no WHERE clause
-    std::shared_ptr<NULLExpression>
-    >;
-*/
 
 
 struct SelectStatement {
@@ -110,6 +114,12 @@ class Parser {
         SOSQLExpression parseTableExpression();
         SOSQLExpression parseORExpression();
         SOSQLExpression parseANDExpression();
+        SOSQLExpression parseBooleanFactor();
+        SOSQLExpression parseBooleanExpression();
+
+        SOSQLExpression parseComparisonExpression(const Token lhs);
+        SOSQLExpression parseISExpression(const Token lhs);
+        SOSQLExpression parseBETWEENExpression(const Token lhs);
 
         Lexer m_lexer;
 };
