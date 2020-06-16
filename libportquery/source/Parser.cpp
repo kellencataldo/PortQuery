@@ -3,12 +3,25 @@
 #include <iostream>
 
 // helper class for std::visit. Constructs a callable which accepts various types based on deduction
-template<class ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+template<typename ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<typename ... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
 
-template<typename T> bool MATCH(const Token t) { return std::holds_alternative<T>(t); }
+/*
+// Note the wierd syntax in the example above, this is because you are looking a braces initialized constructor
+template <typename T> struct isElementPresent: private std::vector<T> {
+    using std::vector<T>::vector;
+    bool operator==(const char& c) const {
+        // Upcast to so that we can perform std::any_of on our vector
+        const std::vector<T>& collection = static_cast<const std::vector<T>&>(*this);
+        return std::any_of(collection.cbegin(), collection.cend(), [&c](const T& other) {return c == other;});
+    }
 
+    // Add this is so we can support both comparisons from both sides
+    friend bool operator==(const T& lhs, const isElementPresent rhs) { return rhs == lhs; }
+};
+*/
 
 std::string getTokenString(const Token t) {
 
@@ -121,14 +134,9 @@ SOSQLExpression Parser::parseBooleanFactor() {
 SOSQLExpression Parser::parseBooleanExpression() {
 
     const Token lhs = m_lexer.nextToken();
-    if (!MATCH<ProtocolToken>(lhs) && !MATCH<PORTToken>(lhs) && !MATCH<NumericToken>(lhs)) {
+    if (!MATCH<ProtocolToken, PORTToken, NumericToken>(lhs)) {
 
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(lhs));
-    }
-
-    else if (!MATCH<PORTToken>(lhs) && MATCH<BETWEENToken>(m_lexer.peek())) {
-
-        throw std::invalid_argument("Only the PORT column can be used in a BETWEEN expression");
     }
 
     return std::visit(overloaded {
@@ -139,25 +147,63 @@ SOSQLExpression Parser::parseBooleanExpression() {
                 const std::string exceptionString = "Invalid operator token in expression: " + getTokenString(t);
                 throw std::invalid_argument(exceptionString); 
             } },
-        m_lexer.nextToken());
+        m_lexer.peek());
 }
 
 
 SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
-    UNUSED_PARAMETER(lhs);
-    return NULL;
+
+    const ComparisonToken comp = std::get<ComparisonToken>(m_lexer.nextToken());
+    const Token rhs = m_lexer.nextToken();
+    if (!MATCH<ProtocolToken, PORTToken, NumericToken>(rhs)) {
+
+        throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
+    }
+
+    return std::make_shared<ComparisonExpression>(ComparisonExpression{comp.m_opType, lhs, rhs});
 }
 
 
 SOSQLExpression Parser::parseISExpression(const Token lhs) {
-    UNUSED_PARAMETER(lhs);
-    return NULL;
+
+    Token rhs = m_lexer.nextToken();
+    ComparisonToken::OpType op = ComparisonToken::OP_EQ;
+    if (MATCH<NOTToken>(rhs)) {
+        op = ComparisonToken::OP_NE;
+        rhs = m_lexer.nextToken();
+    }
+
+    if (!MATCH<ProtocolToken, PORTToken, NumericToken>(rhs)) {
+
+        throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
+    }
+
+    return std::make_shared<ComparisonExpression>(ComparisonExpression{op, lhs, rhs});
 }
 
 
 SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
-    UNUSED_PARAMETER(lhs);
-    return NULL;
+
+    if (!MATCH<PORTToken>(lhs)) {
+        throw std::invalid_argument("Only the PORT column can be used in a BETWEEN expression");
+    }
+
+    m_lexer.nextToken();
+    if (!MATCH<NumericToken>(m_lexer.peek())) {
+        throw std::invalid_argument("Only numeric tokens can be specified in the BETWEEN clause");
+    }
+
+    const NumericToken lowerBound = std::get<NumericToken>(m_lexer.nextToken());
+    if (!MATCH<ANDToken>(m_lexer.nextToken())) {
+        throw std::invalid_argument("AND keyword missing from BETWEEN clause");
+    }
+
+    else if (!MATCH<NumericToken>(m_lexer.peek())) {
+        throw std::invalid_argument("Second numeric token missing from BETWEEN clause");
+    }
+
+    const NumericToken upperBound = std::get<NumericToken>(m_lexer.nextToken());
+    return std::make_shared<BETWEENExpression>(BETWEENExpression{lowerBound.m_value, upperBound.m_value});
 }
 
 std::tuple<bool, NetworkProtocols> Parser::parseSelectSetQuantifier() {

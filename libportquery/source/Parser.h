@@ -55,6 +55,9 @@ struct NOTExpression : BaseExpression {
 
 struct BETWEENExpression : BaseExpression {
 
+    BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound) :
+        m_lowerBound(lowerBound), m_upperBound(upperBound) { }
+
     virtual bool shouldSubmitForScan(const uint16_t port) const {
         return (port >= m_lowerBound) && (port <= m_upperBound);
     }
@@ -65,9 +68,15 @@ struct BETWEENExpression : BaseExpression {
 
 struct ComparisonExpression : BaseExpression {
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const;
+    ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) :
+       m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
-    ComparisonToken::OpType op;
+    virtual bool shouldSubmitForScan(const uint16_t port) const { 
+        UNUSED_PARAMETER(port);
+        return true; 
+    }
+
+    ComparisonToken::OpType m_op;
     Token m_LHSTerminal;
     Token m_RHSTerminal;
 };
