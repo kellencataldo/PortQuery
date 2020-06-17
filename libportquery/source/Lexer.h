@@ -7,7 +7,7 @@
 #include <functional>
 #include <algorithm>
 
-#include "Network.h"
+#include "PortQuery.h"
 
 
 /* Other tokens that could be supported in the future
@@ -36,16 +36,14 @@ template <typename T> struct isElementPresent: private std::vector<T> {
 };
 
 
-struct ProtocolToken {
-
-    NetworkProtocols m_protocol;
-};
-
 // This token represents any numeric value.
 // For right now, only values which can be stored in an unsigned short
 // without truncation are supported
 // This could change I guess IDC.
-struct NumericToken { uint16_t m_value; };
+struct NumericToken { 
+
+    uint16_t m_value; 
+};
 
 // This token represents a binary comparison operator such as !=
 struct ComparisonToken {
@@ -65,9 +63,33 @@ struct ComparisonToken {
     OpType m_opType;
 };
 
+
+// This token represents all the column types in the port query "database"
+// For now, there are only three: PORT, TCP, UDP
+struct ColumnToken {
+
+    enum Column {
+        PORT,
+        TCP,
+        UDP
+    };
+
+    Column m_column;
+};
+
+// This token represents query results that can be compared to the columns
+// Currently, there are only three result, OPEN, CLOSED, and REJECTED
+struct QueryResultToken {
+
+    PortQuery::QueryResult m_queryResult;
+};
+
 // This token represents a User string which contains valid characters
 // This could either be a table alias, a URL, a column alias, etc
-struct UserToken { std::string m_UserToken; };
+struct UserToken { 
+
+    std::string m_UserToken; 
+};
 
 
 // Keyword tokens of all the supported SOSQL keywords
@@ -91,11 +113,6 @@ struct ORDERToken { };
 struct SELECTToken { };
 struct WHEREToken { };
 
-// This token represents the port column. Unlike the ProtocolTokens, it 
-// has no associated network protocol
-struct PORTToken { };
-
-
 // This token should be pretty self explanatory.
 struct EOFToken { };
 
@@ -113,7 +130,8 @@ using Token = std::variant<
     NumericToken,
     ComparisonToken,
     UserToken,
-    ProtocolToken,
+    ColumnToken,
+    QueryResultToken,
 
     ALLToken,
     ANDToken,
@@ -133,7 +151,6 @@ using Token = std::variant<
     SELECTToken,
     WHEREToken,
 
-    PORTToken,
 
     EOFToken,
 

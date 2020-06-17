@@ -1,6 +1,6 @@
 #include "Parser.h"
 
-#include <iostream>
+#include <algorithm>
 
 // helper class for std::visit. Constructs a callable which accepts various types based on deduction
 template<typename ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -45,8 +45,7 @@ std::string getTokenString(const Token t) {
                 [=] (ORDERToken)      { return std::string("[ORDER KEYWORD]"); },
                 [=] (SELECTToken)     { return std::string("[SELECT KEYWORD]");},
                 [=] (WHEREToken)      { return std::string("[WHERE KEYWORD]"); },
-                [=] (PORTToken)       { return std::string("[PORT  KEYWORD]"); },
-                [=] (ProtocolToken)   { return std::string("[PROTOCOL TOKEN]"); }, // more granularity please
+                [=] (ColumnToken)   { return std::string("[PROTOCOL TOKEN]"); }, // more granularity please
                 [=] (EOFToken)        { return std::string("[END OF INPUT]"); },
                 [=] (PunctuationToken<'*'>) { return std::string("[ * ]"); },
                 [=] (PunctuationToken<'('>) { return std::string("[ ( ]"); }, 
@@ -67,13 +66,13 @@ SOSQLSelectStatement Parser::parseSOSQLStatement() {
     }
 
 
-    const auto [selectPort, selectedProtocols] = parseSelectSetQuantifier();
+    const SelectSet selectedSet = parseSelectSetQuantifier();
     const std::string tableReference = parseTableReference();
     const SOSQLExpression tableExpression = parseTableExpression();
 
     // parse end here, check for EOF and semicolon
     // parse where statement here.
-    return { selectPort, selectedProtocols, tableReference, tableExpression };
+    return { selectedSet, tableReference, tableExpression };
 }
 
 
@@ -134,7 +133,7 @@ SOSQLExpression Parser::parseBooleanFactor() {
 SOSQLExpression Parser::parseBooleanExpression() {
 
     const Token lhs = m_lexer.nextToken();
-    if (!MATCH<ProtocolToken, PORTToken, NumericToken>(lhs)) {
+    if (!MATCH<ColumnToken, QueryResultToken, NumericToken>(lhs)) {
 
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(lhs));
     }
@@ -155,7 +154,7 @@ SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
 
     const ComparisonToken comp = std::get<ComparisonToken>(m_lexer.nextToken());
     const Token rhs = m_lexer.nextToken();
-    if (!MATCH<ProtocolToken, PORTToken, NumericToken>(rhs)) {
+    if (!MATCH<ColumnToken, QueryResultToken, NumericToken>(rhs)) {
 
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
@@ -173,7 +172,7 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
         rhs = m_lexer.nextToken();
     }
 
-    if (!MATCH<ProtocolToken, PORTToken, NumericToken>(rhs)) {
+    if (!MATCH<ColumnToken, QueryResultToken, NumericToken>(rhs)) {
 
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
@@ -183,10 +182,6 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
 
 
 SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
-
-    if (!MATCH<PORTToken>(lhs)) {
-        throw std::invalid_argument("Only the PORT column can be used in a BETWEEN expression");
-    }
 
     m_lexer.nextToken();
     if (!MATCH<NumericToken>(m_lexer.peek())) {
@@ -203,18 +198,20 @@ SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
     }
 
     const NumericToken upperBound = std::get<NumericToken>(m_lexer.nextToken());
-    return std::make_shared<BETWEENExpression>(BETWEENExpression{lowerBound.m_value, upperBound.m_value});
+    return std::make_shared<BETWEENExpression>(BETWEENExpression{lhs, lowerBound.m_value, upperBound.m_value});
 }
 
-std::tuple<bool, NetworkProtocols> Parser::parseSelectSetQuantifier() {
+SelectSet Parser::parseSelectSetQuantifier() {
 
     return std::visit(overloaded {
-            [=] (ProtocolToken)         { return parseSelectList(); },
-            [=] (PORTToken)             { return parseSelectList(); },
-            [=] (PunctuationToken<'*'>) { 
+            [=] (ColumnToken) { 
+                return parseSelectList(); 
+            },
+            [=] (PunctuationToken<'*'>) -> SelectSet { 
                 m_lexer.nextToken(); 
-                return std::tuple<bool, NetworkProtocols>{true, (NetworkProtocols::TCP|NetworkProtocols::UDP)}; },
-            [=] (auto t) -> std::tuple<bool, NetworkProtocols> {
+                return { ColumnToken::PORT, ColumnToken::TCP, ColumnToken::UDP }; 
+            },
+            [=] (auto t) -> SelectSet {
                 const std::string exceptionString = "Invalid token in select list: " + getTokenString(t);
                 throw std::invalid_argument(exceptionString); 
             } },
@@ -222,40 +219,31 @@ std::tuple<bool, NetworkProtocols> Parser::parseSelectSetQuantifier() {
 
 };
 
-std::tuple<bool, NetworkProtocols> Parser::parseSelectList() {
-    
-    NetworkProtocols selectedProtocols = NetworkProtocols::NONE;
-    bool selectPort = false;
+std::vector<ColumnToken::Column> Parser::parseSelectList() {
 
-    bool moreColumns = true;
-    while (moreColumns) {
+    SelectSet selectedSet = { };
+    for (bool moreColumns = true; moreColumns;) {
         std::visit(overloaded { 
-                [&selectPort] (PORTToken) { 
-                    if (selectPort) { throw std::invalid_argument("Duplicate PORT column specified"); }
-                    selectPort = true; 
+                [&] (ColumnToken c) { 
+                    if (selectedSet.end() != std::find(selectedSet.begin(), selectedSet.end(), c.m_column)) {
+                        std::string exceptionString = "Invalid token specified in select list: " + getTokenString(c);
+                        throw std::invalid_argument(exceptionString);
+                    }
+
+                    selectedSet.push_back(c.m_column);
+                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
                 },
 
-                [&selectedProtocols] (const ProtocolToken p) {
-                    if (NetworkProtocols::NONE != (p.m_protocol & selectedProtocols)) { 
-                        throw std::invalid_argument("Duplicate protocol column specified"); }
-                    selectedProtocols |= p.m_protocol;
-                },
-
+                [&] (PunctuationToken<','>) -> void { },
                 [=] (const auto t) -> void { 
                     std::string exceptionString = "Invalid token specified in select list: " + getTokenString(t);
                     throw std::invalid_argument(exceptionString);
                 } },
            
             m_lexer.nextToken());
-
-        // If there is a comma here, there are more columns to scan
-        moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
-        if(moreColumns) {
-            m_lexer.nextToken();
-        }
     }
 
-    return { selectPort, selectedProtocols };
+    return selectedSet;
 }
 
 

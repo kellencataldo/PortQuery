@@ -27,9 +27,12 @@ Token getKeywordTokenFromString(const std::string lexeme) {
         {"WHERE",   WHEREToken{ }},
 
         // these aren't really keywords
-        {"PORT",    PORTToken{ }},
-        {"TCP",     ProtocolToken{ NetworkProtocols::TCP }},
-        {"UDP",     ProtocolToken{ NetworkProtocols::UDP }}
+        {"PORT",    ColumnToken{ ColumnToken::PORT }},
+        {"TCP",     ColumnToken{ ColumnToken::TCP }},
+        {"UDP",     ColumnToken{ ColumnToken::UDP }},
+        {"OPEN",    QueryResultToken{ PortQuery::OPEN }},
+        {"CLOSED",  QueryResultToken{ PortQuery::CLOSED}},
+        {"REJECTED", QueryResultToken{ PortQuery::REJECTED}}
     };
 
     auto keywordMapIter = keywordMap.find(lexeme);

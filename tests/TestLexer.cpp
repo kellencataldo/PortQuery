@@ -253,25 +253,50 @@ TEST(RecognizeTokens, KeywordTokens) {
 
 TEST(RecognizeTokens, ColumnTokens) {
 
-    // Bad inputs
     Lexer lexer_T1{"PORT TCP UDP"};
 
     Token token_T1{lexer_T1.nextToken()}; // PORT
-    EXPECT_TRUE(std::holds_alternative<PORTToken>(token_T1));
+    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T1));
+    ColumnToken column_T1 = std::get<ColumnToken>(token_T1);
+    EXPECT_TRUE(ColumnToken::PORT == column_T1.m_column);
 
     Token token_T2{lexer_T1.nextToken()}; // TCP
-    ASSERT_TRUE(std::holds_alternative<ProtocolToken>(token_T2));
-    ProtocolToken protocol_T2 = std::get<ProtocolToken>(token_T2);
-    EXPECT_TRUE(NetworkProtocols::TCP == protocol_T2.m_protocol);
+    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T2));
+    ColumnToken column_T2 = std::get<ColumnToken>(token_T2);
+    EXPECT_TRUE(ColumnToken::TCP == column_T2.m_column);
 
     Token token_T3{lexer_T1.nextToken()}; // UDP
-    ASSERT_TRUE(std::holds_alternative<ProtocolToken>(token_T3));
-    ProtocolToken protocol_T3 = std::get<ProtocolToken>(token_T3);
-    EXPECT_TRUE(NetworkProtocols::UDP == protocol_T3.m_protocol);
+    ASSERT_TRUE(std::holds_alternative<ColumnToken>(token_T3));
+    ColumnToken column_T3 = std::get<ColumnToken>(token_T3);
+    EXPECT_TRUE(ColumnToken::UDP == column_T3.m_column);
 
     Token token_T20{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
 };
+
+
+TEST(RecognizeTokens, QueryResultTokens) {
+
+    Lexer lexer_T1{"OPEN CLOSED REJECTED"};
+
+    Token token_T1{lexer_T1.nextToken()}; // OPEN
+    EXPECT_TRUE(std::holds_alternative<QueryResultToken>(token_T1));
+    QueryResultToken query_T1 = std::get<QueryResultToken>(token_T1);
+    EXPECT_TRUE(PortQuery::OPEN == query_T1.m_queryResult);
+
+    Token token_T2{lexer_T1.nextToken()}; // CLOSED
+    ASSERT_TRUE(std::holds_alternative<QueryResultToken>(token_T2));
+    QueryResultToken query_T2 = std::get<QueryResultToken>(token_T2);
+    EXPECT_TRUE(PortQuery::CLOSED == query_T2.m_queryResult);
+
+    Token token_T3{lexer_T1.nextToken()}; // REJECTED
+    ASSERT_TRUE(std::holds_alternative<QueryResultToken>(token_T3));
+    QueryResultToken query_T3 = std::get<QueryResultToken>(token_T3);
+    EXPECT_TRUE(PortQuery::REJECTED == query_T3.m_queryResult);
+
+    Token token_T20{lexer_T1.nextToken()};
+    ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
+}
 
 
 TEST(LexerFunctionality, Peek) {

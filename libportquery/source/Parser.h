@@ -55,13 +55,14 @@ struct NOTExpression : BaseExpression {
 
 struct BETWEENExpression : BaseExpression {
 
-    BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound) :
-        m_lowerBound(lowerBound), m_upperBound(upperBound) { }
+    BETWEENExpression(const Token terminal, const uint16_t lowerBound, const uint16_t upperBound) :
+        m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
     virtual bool shouldSubmitForScan(const uint16_t port) const {
         return (port >= m_lowerBound) && (port <= m_upperBound);
     }
 
+    Token m_terminal;
     uint16_t m_lowerBound;
     uint16_t m_upperBound;
 };
@@ -89,12 +90,11 @@ struct NULLExpression : BaseExpression {
     }
 };
 
+using SelectSet = std::vector<ColumnToken::Column>;
 
 struct SelectStatement {
 
-    bool m_selectPort;
-
-    NetworkProtocols m_selectedProtocols;
+    SelectSet m_selectSet;
 
     std::string m_tableReference;
 
@@ -115,8 +115,8 @@ class Parser {
 
     private:
 
-        std::tuple<bool, NetworkProtocols> parseSelectSetQuantifier();
-        std::tuple<bool, NetworkProtocols> parseSelectList();
+        SelectSet parseSelectSetQuantifier();
+        SelectSet parseSelectList();
 
         std::string parseTableReference();
 
