@@ -38,7 +38,6 @@ std::string getTokenString(const Token t) {
                 [=] (IFToken)         { return std::string("[IF KEYWORD]"); },
                 [=] (INToken)         { return std::string("[IN KEYWORD]"); },
                 [=] (ISToken)         { return std::string("[IS KEYWORD]"); },
-                [=] (LIKEToken)       { return std::string("[LIKE KEYWORD]"); },
                 [=] (LIMITToken)      { return std::string("[LIMIT KEYWORD]"); },
                 [=] (NOTToken)        { return std::string("[NOT KEYWORD]"); },
                 [=] (ORToken)         { return std::string("[OR KEYWORD]"); },
@@ -126,7 +125,7 @@ SOSQLExpression Parser::parseBooleanFactor() {
         return std::make_shared<NOTExpression>(NOTExpression{parseBooleanExpression()});
     }
 
-    return parseBooleanFactor();
+    return parseBooleanExpression();
 }
 
 
@@ -231,16 +230,19 @@ std::vector<ColumnToken::Column> Parser::parseSelectList() {
                     }
 
                     selectedSet.push_back(c.m_column);
+                    m_lexer.nextToken();
                     moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
                 },
 
-                [&] (PunctuationToken<','>) -> void { },
+                [&] (PunctuationToken<','>) {
+                    m_lexer.nextToken();
+                },
                 [=] (const auto t) -> void { 
                     std::string exceptionString = "Invalid token specified in select list: " + getTokenString(t);
                     throw std::invalid_argument(exceptionString);
                 } },
            
-            m_lexer.nextToken());
+            m_lexer.peek());
     }
 
     return selectedSet;

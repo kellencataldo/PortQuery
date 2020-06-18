@@ -172,7 +172,7 @@ TEST(RecognizeTokens, NumericTokens) {
 
 TEST(RecognizeTokens, KeywordTokens) {
 
-    Lexer lexer_T1{"ALL AND ANY BETWEEN COUNT FROM IF IN IS LIKE LIMIT NOT OR ORDER SELECT WHERE"};
+    Lexer lexer_T1{"ALL AND ANY BETWEEN COUNT FROM IF IN IS LIMIT NOT OR ORDER SELECT WHERE"};
 
     Token token_T1{lexer_T1.nextToken()}; // ALL
     EXPECT_TRUE(std::holds_alternative<ALLToken>(token_T1));
@@ -200,9 +200,6 @@ TEST(RecognizeTokens, KeywordTokens) {
 
     Token token_T9{lexer_T1.nextToken()}; // IS
     ASSERT_TRUE(std::holds_alternative<ISToken>(token_T9));
-
-    Token token_T10{lexer_T1.nextToken()}; // LIKE
-    EXPECT_TRUE(std::holds_alternative<LIKEToken>(token_T10));
 
     Token token_T11{lexer_T1.nextToken()}; // LIMIT
     ASSERT_TRUE(std::holds_alternative<LIMITToken>(token_T11));

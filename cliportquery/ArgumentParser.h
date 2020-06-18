@@ -222,14 +222,17 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
         }
 
         bool parseEngine(void) {
-            if(std::find(m_arguments.begin(), m_arguments.end(), "--usage") != m_arguments.end() ||
-                m_arguments.empty()) {
+            if(std::find(m_arguments.begin(), m_arguments.end(), "--usage") != m_arguments.end() || m_arguments.empty()) {
                 outputPolicy::output("WELCOME TO PORT QUERY. WHY ARE YOU USING THIS.");
                 outputPolicy::output("USAGE: [OPTION1, OPTION2...] QUERY_STRING");
-                if(m_commands.empty()) { return false; }
+                if(m_commands.empty()) { 
+                    return false; 
+                }
+
                 size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(),
-                    [](const auto& lhs, const auto& rhs)
-                    {return lhs.first.size() < rhs.first.size();})->first.size() + 50;
+                    [] (const auto& lhs, const auto& rhs) {
+                        return lhs.first.size() < rhs.first.size();
+                    })->first.size() + 50;
                 this->setWidth(maxLength);
                 outputPolicy::output("    OPTION HELP");
                 std::for_each(m_commands.begin(), m_commands.end(), [maxLength](const auto& e){

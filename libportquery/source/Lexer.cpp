@@ -18,7 +18,6 @@ Token getKeywordTokenFromString(const std::string lexeme) {
         {"IF",      IFToken{ }},
         {"IN",      INToken{ }},
         {"IS",      ISToken{ }},
-        {"LIKE",    LIKEToken{ }},
         {"LIMIT",   LIMITToken{ }},
         {"NOT",     NOTToken{ }},
         {"OR",      ORToken{ }},

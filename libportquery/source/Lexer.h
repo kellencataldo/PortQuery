@@ -105,7 +105,6 @@ struct FROMToken { };
 struct IFToken { };
 struct INToken { };
 struct ISToken { };
-struct LIKEToken { };
 struct LIMITToken { };
 struct NOTToken { };
 struct ORToken { };
@@ -143,7 +142,6 @@ using Token = std::variant<
     IFToken,
     INToken,
     ISToken,
-    LIKEToken,
     LIMITToken,
     NOTToken,
     ORToken,
