@@ -7,8 +7,6 @@
 #include <functional>
 #include <algorithm>
 
-#include "PortQuery.h"
-
 
 /* Other tokens that could be supported in the future
 
@@ -81,7 +79,7 @@ struct ColumnToken {
 // Currently, there are only three result, OPEN, CLOSED, and REJECTED
 struct QueryResultToken {
 
-    PortQuery::QueryResult m_queryResult;
+    uint16_t m_queryResult;
 };
 
 // This token represents a User string which contains valid characters

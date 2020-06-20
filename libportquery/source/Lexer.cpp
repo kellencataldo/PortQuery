@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "Lexer.h"
+#include "PortQuery.h"
 
 
 Token getKeywordTokenFromString(const std::string lexeme) {

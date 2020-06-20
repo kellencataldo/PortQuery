@@ -2,6 +2,7 @@
 
 #include "gtest/gtest.h"
 #include "../libportquery/source/Lexer.h"
+#include "../libportquery/include/PortQuery.h"
 
 
 TEST(RecognizeTokens, EOFTokens) {

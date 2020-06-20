@@ -6,19 +6,11 @@ class PortQuery {
 
     public:
 
-        enum QueryResult : uint16_t {
-            OPEN =      0,
-            CLOSED =    1,
-            REJECTED =  2,
-        };
+        static constexpr uint16_t OPEN = 0;
+        static constexpr uint16_t CLOSED = 1;
+        static constexpr uint16_t REJECTED = 2;
 
-        struct ColumnType {
-            union {
-                QueryResult result;
-                uint16_t port;
-            };
-        };
-        
+       
         void execute(std::string queryString) { 
             queryString += "go away error";
         }

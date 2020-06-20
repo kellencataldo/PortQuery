@@ -11,6 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
 endif()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # this is a cmake generator expression, if the config is debug it will define
 # the DEBUG preprocessor definition
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
