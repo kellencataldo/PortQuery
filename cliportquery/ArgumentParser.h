@@ -33,12 +33,12 @@ struct emptyOutput {
 // Flag arguments are treated as bools: (flag present == true, flag not present == false)
 // Arguments supplied to list commands must all be the same type
 
-template <typename outputPolicy = emptyOutput> class argumentParser : public outputPolicy {
+template <typename outputPolicy = emptyOutput> class ArgumentParser : public outputPolicy {
     public:
 
         // The argument parser constructor is designed to take arguments directly from the arguments
         // passed on the command line to the main entry of the program
-        explicit argumentParser(const int argc, const char * const argv[]) :
+        explicit ArgumentParser(const int argc, const char * const argv[]) :
             // This first argument is skipped, because this is the name of the image being executed, and
             // this is not important to our application
             m_arguments(argv + 1, argv + argc) { }
@@ -135,17 +135,17 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
 
                 bool parseArgument(const std::string argument) {
                     try {
-                        argumentParser::convertArgument(argument, m_value);
+                        ArgumentParser::convertArgument(argument, m_value);
                     }
                     catch(std::exception& e) {
-                        outputPolicy::output(std::string("EXCEPTION INFORMATION: ") + e.what());
+                        outputPolicy::output(std::string("EXCEPTION INFORMATION: ") + e.what() + "\n");
                         return false;
                     }
                     return true;
                 }
 
                 std::string getArgString(void) const {
-                    return argumentParser::getRepresentation(m_value);
+                    return ArgumentParser::getRepresentation(m_value);
                 }
 
                 T m_value;
@@ -188,7 +188,7 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
         template<typename T>
         static void convertArgument(std::string argument, std::vector<T>& valueVector) {
             T value;
-            argumentParser::convertArgument(argument, value);
+            ArgumentParser::convertArgument(argument, value);
             valueVector.push_back(value);
         }
 
@@ -207,7 +207,7 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
         template<typename T>
         static std::string getRepresentation(const std::vector<T> value) {
             T baseValue;
-            return "{" + argumentParser::getRepresentation(baseValue) + "...}";
+            return "{" + ArgumentParser::getRepresentation(baseValue) + "...}";
         }
 
         template <typename T>
@@ -224,21 +224,21 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
 
         bool parseEngine(void) {
             if(std::find(m_arguments.begin(), m_arguments.end(), "--usage") != m_arguments.end() || m_arguments.empty()) {
-                outputPolicy::output("WELCOME TO PORT QUERY. WHY ARE YOU USING THIS.");
-                outputPolicy::output("USAGE: [OPTION1, OPTION2...] QUERY_STRING");
+                outputPolicy::output("WELCOME TO PORT QUERY. WHY ARE YOU USING THIS.\n");
+                outputPolicy::output("USAGE: [OPTION1, OPTION2...] QUERY_STRING\n");
+
                 if(m_commands.empty()) { 
                     return false; 
                 }
 
                 const auto findMax =  [] (const auto& l, const auto& r) { return l.first.size() < r.first.size(); };
-                const size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(), findMax)->first.size() + 50;
-                this->setWidth(maxLength);
-                outputPolicy::output("    OPTION HELP");
-
+                const size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(), findMax)->first.size() + 40;
                 std::for_each(m_commands.begin(), m_commands.end(), [maxLength] (const auto& e) {
-                    outputPolicy::setWidth(maxLength);
+                    outputPolicy::setWidth(0);
                     outputPolicy::output("    " + e.first + " " + e.second->getArgString());
-                    outputPolicy::output(e.second->m_helpText);});
+                    outputPolicy::setWidth(maxLength);
+                    outputPolicy::output(e.second->m_helpText + "\n");});
+                    
                 return false;
             }
 
@@ -246,7 +246,7 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
             for (auto argument = m_arguments.begin(); argument != m_arguments.end()-1; argument++) {
                 if(isCommand(*argument) && m_commands.find(*argument) != m_commands.end()) {
                     if(sliding != nullptr && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
-                        outputPolicy::output("ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage");
+                        outputPolicy::output("ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage\n");
                         return false;
                     }
 
@@ -263,12 +263,12 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
                     continue;
                 }
 
-                outputPolicy::output("MISMATCHED ARGUMENT SPECIFIED: " + *argument + ". SEE --usage");
+                outputPolicy::output("MISMATCHED ARGUMENT SPECIFIED: " + *argument + ". SEE --usage\n");
                 return false;
             }
 
             if(sliding && sliding->m_commandType == COMMAND_TYPE_POSITIONAL) {
-                outputPolicy::output("ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage");
+                outputPolicy::output("ERROR: ARGUMENTS REQUIRED FOR FLAG. SEE --usage\n");
                 return false;
             }
 

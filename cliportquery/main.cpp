@@ -8,7 +8,7 @@
 struct STDOutput {
     public:
         static void output(const std::string outputString) { 
-            std::cout << outputString << std::endl;
+            std::cout << outputString;
         }
 
         static void setWidth(const size_t width) { 
@@ -22,21 +22,19 @@ struct STDOutput {
 
 int main(int argc, char* args[]) {
 
-    argumentParser<STDOutput> parser(argc, args);
-    argumentParser.addCommand<int>("--loglevel", "determines the verbosity of logging information presented", 0);
+    ArgumentParser<STDOutput> parser(argc, args);
+    parser.addCommand<int>("--timeout", "duration in seconds to wait on a response", 2);
+
     if(!parser.parse()) {
-        // print output here.
+
         return EXIT_FAILURE;
     }
 
-    int logLevel = argumentParser.getCommand<int>("--loglevel");
-    std::string queryString = parser.getQueryString();
+    const int timeout = parser.getCommand<int>("--timeout");
+    const std::string queryString = parser.getQueryString();
 
 
-    portQuery pq;
-    // portQuery -> set log level (maybe go in constructor)
+    PortQuery pq{};
 
-
-    pq.printTest();
     return 0;
 }

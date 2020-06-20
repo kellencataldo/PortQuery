@@ -1,29 +1,57 @@
+
 #pragma once
+
 #include <string>
+#include <functional>
+#include <any>
 
 
 class PortQuery {
-
     public:
+
+        using PQCallback = std::function<void(std::any, std::vector<uint16_t>)>;
 
         static constexpr uint16_t OPEN = 0;
         static constexpr uint16_t CLOSED = 1;
         static constexpr uint16_t REJECTED = 2;
 
-       
-        void execute(std::string queryString) { 
-            queryString += "go away error";
+
+        enum PQ_STATUS {
+            SUCCESS,
+            MORE_RESULTS,
+            QUERY_FINISHED
+        };
+
+        PortQuery(PQCallback const callback=nullptr, const std::any data=nullptr, const int timeout=TIMEOUT_DEFAULT) : 
+            m_userCallback(callback), m_userData(data), m_timeout(timeout) { }
+
+        PQ_STATUS prepare(std::string queryString);
+        PQ_STATUS step();
+        PQ_STATUS finalize();
+        PQ_STATUS execute(std::string queryString);
+
+
+        void setUserCallback(const PQCallback userCallback) {
+
+            m_userCallback = userCallback;
         }
 
-    
-        void printTest();
+        void setUserData(const std::any userData) {
 
-        /*
-        ASTSelectNode SOSQLStatement;
-        Lexer m_lexer;
+            m_userData = userData;
+        }
 
-        // m_environment, maps port num -> status, can submit port for inspection.
-        // this should exist but... it should belong to whatever does the _visiting_
-        // hint: that will be hte main portquery object (or the visitor object
-        */
+        void setTimeout(const int timeout) {
+
+            m_timeout = timeout;
+        }
+
+
+    private:
+
+        static constexpr int TIMEOUT_DEFAULT = 2;
+
+        PQCallback m_userCallback;
+        std::any m_userData;
+        int m_timeout;
 };

@@ -3,9 +3,22 @@
 #include "PortQuery.h"
 #include "Lexer.h"
 
-void PortQuery::printTest() {
-    std::cout << "linked correctly" << std::endl;
-    Lexer lex("just a dumb example");
-    Token fuck = lex.nextToken();
 
+PortQuery::PQ_STATUS PortQuery::prepare(std::string queryString) {
+    return SUCCESS;
 }
+
+PortQuery::PQ_STATUS PortQuery::step() {
+    return SUCCESS;
+}
+
+
+PortQuery::PQ_STATUS PortQuery::finalize() {
+    return SUCCESS;
+}
+
+PortQuery::PQ_STATUS PortQuery::execute(std::string queryString) { 
+    return SUCCESS;
+}
+
+
