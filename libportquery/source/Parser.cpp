@@ -65,13 +65,13 @@ SOSQLSelectStatement Parser::parseSOSQLStatement() {
     }
 
 
-    const SelectSet selectedSet = parseSelectSetQuantifier();
-    const std::string tableReference = parseTableReference();
-    const SOSQLExpression tableExpression = parseTableExpression();
+    SelectSet selectedSet = parseSelectSetQuantifier();
+    std::string tableReference = parseTableReference();
+    SOSQLExpression tableExpression = parseTableExpression();
 
     // parse end here, check for EOF and semicolon
     // parse where statement here.
-    return { selectedSet, tableReference, tableExpression };
+    return std::make_unique<SelectStatement>(SelectStatement{selectedSet, tableReference, std::move(tableExpression)});
 }
 
 
@@ -80,7 +80,7 @@ SOSQLExpression Parser::parseTableExpression() {
 
     if (!MATCH<WHEREToken>(m_lexer.peek())) {
 
-        return std::make_shared<NULLExpression>();
+        return std::make_unique<NULLExpression>();
     }
 
     m_lexer.nextToken(); // this is the WHERE token;
@@ -95,7 +95,7 @@ SOSQLExpression Parser::parseORExpression() {
 
         m_lexer.nextToken(); // scan past or token
         SOSQLExpression right = parseANDExpression();
-        expression = std::make_shared<ORExpression>(ORExpression{expression, right});
+        expression = std::make_unique<ORExpression>(ORExpression{std::move(expression), std::move(right)});
     }
 
 
@@ -110,7 +110,7 @@ SOSQLExpression Parser::parseANDExpression() {
 
         m_lexer.nextToken(); // scan past and token
         SOSQLExpression right = parseBooleanFactor();
-        expression = std::make_shared<ANDExpression>(ANDExpression{expression, right});
+        expression = std::make_unique<ANDExpression>(ANDExpression{std::move(expression), std::move(right)});
     }
 
 
@@ -122,7 +122,7 @@ SOSQLExpression Parser::parseBooleanFactor() {
 
     if(MATCH<NOTToken>(m_lexer.peek())) {
         m_lexer.nextToken();
-        return std::make_shared<NOTExpression>(NOTExpression{parseBooleanExpression()});
+        return std::make_unique<NOTExpression>(NOTExpression{parseBooleanExpression()});
     }
 
     return parseBooleanExpression();
@@ -158,7 +158,7 @@ SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
-    return std::make_shared<ComparisonExpression>(ComparisonExpression{comp.m_opType, lhs, rhs});
+    return std::make_unique<ComparisonExpression>(ComparisonExpression{comp.m_opType, lhs, rhs});
 }
 
 
@@ -176,7 +176,7 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
-    return std::make_shared<ComparisonExpression>(ComparisonExpression{op, lhs, rhs});
+    return std::make_unique<ComparisonExpression>(ComparisonExpression{op, lhs, rhs});
 }
 
 
@@ -197,7 +197,7 @@ SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
     }
 
     const NumericToken upperBound = std::get<NumericToken>(m_lexer.nextToken());
-    return std::make_shared<BETWEENExpression>(BETWEENExpression{lhs, lowerBound.m_value, upperBound.m_value});
+    return std::make_unique<BETWEENExpression>(BETWEENExpression{lhs, lowerBound.m_value, upperBound.m_value});
 }
 
 SelectSet Parser::parseSelectSetQuantifier() {

@@ -8,21 +8,22 @@
 #include "Network.h"
 
 
-template <typename T> void UNUSED_PARAMETER(T &&) { };
+#define UNUSED_PARAMETER(x) (void) (x)
 
-//
+
 struct BaseExpression {
 
     virtual bool shouldSubmitForScan(const uint16_t port) const = 0;
+    virtual ~BaseExpression() { }
 };
 
-using SOSQLExpression = std::shared_ptr<BaseExpression>;
+using SOSQLExpression = std::unique_ptr<BaseExpression>;
 
 struct ORExpression : BaseExpression {
 
-    ORExpression(const SOSQLExpression left, const SOSQLExpression right) : m_left(left), m_right(right) { }
+    ORExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
+    virtual bool shouldSubmitForScan(const uint16_t port) const override {
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const {
         return m_left->shouldSubmitForScan(port) || m_right->shouldSubmitForScan(port);
     }
 
@@ -32,9 +33,10 @@ struct ORExpression : BaseExpression {
 
 struct ANDExpression : BaseExpression {
 
-    ANDExpression(const SOSQLExpression left, const SOSQLExpression right) : m_left(left), m_right(right) { }
+    ANDExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const {
+    virtual bool shouldSubmitForScan(const uint16_t port) const override {
+
         return m_left->shouldSubmitForScan(port) && m_right->shouldSubmitForScan(port);
     }
 
@@ -44,9 +46,10 @@ struct ANDExpression : BaseExpression {
 
 struct NOTExpression : BaseExpression {
 
-    NOTExpression(const SOSQLExpression expr) : m_expr(expr) { }
+    NOTExpression(SOSQLExpression expr) : m_expr(std::move(expr)) { }
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const {
+    virtual bool shouldSubmitForScan(const uint16_t port) const override {
+
         return m_expr->shouldSubmitForScan(port);
     }
 
@@ -58,7 +61,8 @@ struct BETWEENExpression : BaseExpression {
     BETWEENExpression(const Token terminal, const uint16_t lowerBound, const uint16_t upperBound) :
         m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const {
+    virtual bool shouldSubmitForScan(const uint16_t port) const override {
+
         return (port >= m_lowerBound) && (port <= m_upperBound);
     }
 
@@ -72,7 +76,8 @@ struct ComparisonExpression : BaseExpression {
     ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) :
        m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const { 
+    virtual bool shouldSubmitForScan(const uint16_t port) const override { 
+
         UNUSED_PARAMETER(port);
         return true; 
     }
@@ -84,7 +89,8 @@ struct ComparisonExpression : BaseExpression {
 
 struct NULLExpression : BaseExpression {
 
-    virtual bool shouldSubmitForScan(const uint16_t port) const {
+    virtual bool shouldSubmitForScan(const uint16_t port) const override { 
+
         UNUSED_PARAMETER(port);
         return true;
     }
@@ -92,16 +98,25 @@ struct NULLExpression : BaseExpression {
 
 using SelectSet = std::vector<ColumnToken::Column>;
 
-struct SelectStatement {
 
-    SelectSet m_selectSet;
+class SelectStatement {
+    public:
+        SelectStatement(SelectSet selectedSet, std::string tableReference, SOSQLExpression tableExpression) : 
+            m_selectedSet(std::move(selectedSet)), m_tableReference(std::move(tableReference)), 
+            m_tableExpression(std::move(tableExpression)) { }
 
-    std::string m_tableReference;
+        SelectSet getSelectSet() const {
 
-    SOSQLExpression m_tableExpression;
+            return m_selectedSet;
+        }
+
+    private:
+        SelectSet m_selectedSet;
+        std::string m_tableReference;
+        SOSQLExpression m_tableExpression;
 };
 
-typedef SelectStatement SOSQLSelectStatement;
+typedef std::unique_ptr<SelectStatement> SOSQLSelectStatement;
 
 class Parser { 
 
