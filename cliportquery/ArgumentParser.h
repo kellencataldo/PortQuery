@@ -6,6 +6,7 @@
 #include <memory>
 #include <algorithm>
 #include <limits>
+#include <functional>
 
 
 // This empty output policy exists so that when testing these methods the console
@@ -229,13 +230,12 @@ template <typename outputPolicy = emptyOutput> class argumentParser : public out
                     return false; 
                 }
 
-                size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(),
-                    [] (const auto& lhs, const auto& rhs) {
-                        return lhs.first.size() < rhs.first.size();
-                    })->first.size() + 50;
+                const auto findMax =  [] (const auto& l, const auto& r) { return l.first.size() < r.first.size(); };
+                const size_t maxLength = std::max_element(m_commands.begin(), m_commands.end(), findMax)->first.size() + 50;
                 this->setWidth(maxLength);
                 outputPolicy::output("    OPTION HELP");
-                std::for_each(m_commands.begin(), m_commands.end(), [maxLength](const auto& e){
+
+                std::for_each(m_commands.begin(), m_commands.end(), [maxLength] (const auto& e) {
                     outputPolicy::setWidth(maxLength);
                     outputPolicy::output("    " + e.first + " " + e.second->getArgString());
                     outputPolicy::output(e.second->m_helpText);});
