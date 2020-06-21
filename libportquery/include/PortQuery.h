@@ -5,6 +5,8 @@
 #include <functional>
 #include <any>
 
+#include "../source/Parser.h"
+
 
 class PortQuery {
     public:
@@ -15,20 +17,13 @@ class PortQuery {
         static constexpr uint16_t CLOSED = 1;
         static constexpr uint16_t REJECTED = 2;
 
+        PortQuery(PQCallback const callback=nullptr, const std::any context=nullptr, const int timeout=TIMEOUT_DEFAULT) : 
+            m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_selectStatement(nullptr) { }
 
-        enum PQ_STATUS {
-            SUCCESS,
-            MORE_RESULTS,
-            QUERY_FINISHED
-        };
-
-        PortQuery(PQCallback const callback=nullptr, const std::any data=nullptr, const int timeout=TIMEOUT_DEFAULT) : 
-            m_userCallback(callback), m_userData(data), m_timeout(timeout) { }
-
-        PQ_STATUS prepare(std::string queryString);
-        PQ_STATUS step();
-        PQ_STATUS finalize();
-        PQ_STATUS execute(std::string queryString);
+        bool prepare(std::string queryString);
+        bool run();
+        bool finalize();
+        bool execute(std::string queryString);
 
 
         void setUserCallback(const PQCallback userCallback) {
@@ -36,9 +31,9 @@ class PortQuery {
             m_userCallback = userCallback;
         }
 
-        void setUserData(const std::any userData) {
+        void setUserData(const std::any userContext) {
 
-            m_userData = userData;
+            m_userContext = userContext;
         }
 
         void setTimeout(const int timeout) {
@@ -46,12 +41,19 @@ class PortQuery {
             m_timeout = timeout;
         }
 
+        std::string getErrorString() const {
+
+            return m_errorString;
+        }
 
     private:
 
         static constexpr int TIMEOUT_DEFAULT = 2;
+        int m_timeout;
 
         PQCallback m_userCallback;
-        std::any m_userData;
-        int m_timeout;
+        std::any m_userContext;
+
+        SOSQLSelectStatement m_selectStatement;
+        std::string m_errorString;
 };

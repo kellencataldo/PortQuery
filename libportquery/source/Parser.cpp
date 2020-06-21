@@ -8,20 +8,6 @@ template<typename ... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
 
-/*
-// Note the wierd syntax in the example above, this is because you are looking a braces initialized constructor
-template <typename T> struct isElementPresent: private std::vector<T> {
-    using std::vector<T>::vector;
-    bool operator==(const char& c) const {
-        // Upcast to so that we can perform std::any_of on our vector
-        const std::vector<T>& collection = static_cast<const std::vector<T>&>(*this);
-        return std::any_of(collection.cbegin(), collection.cend(), [&c](const T& other) {return c == other;});
-    }
-
-    // Add this is so we can support both comparisons from both sides
-    friend bool operator==(const T& lhs, const isElementPresent rhs) { return rhs == lhs; }
-};
-*/
 
 std::string getTokenString(const Token t) {
 

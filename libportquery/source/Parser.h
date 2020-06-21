@@ -123,8 +123,6 @@ class Parser {
     public:
         Parser(const std::string& queryString) : m_lexer(queryString) { }
 
-        // SELECT Only SQL
-        // maybe make this a unique_ptr? investigation required.
         SOSQLSelectStatement parseSOSQLStatement();
 
 

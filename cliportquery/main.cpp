@@ -4,6 +4,8 @@
 #include "ArgumentParser.h"
 #include "PortQuery.h"
 
+#define UNUSED(x) (void)(x)
+
 
 struct STDOutput {
     public:
@@ -20,6 +22,19 @@ struct STDOutput {
 };
 
 
+class QueryContext {
+
+
+};
+
+
+void QueryCallback(std::any callbackContext, std::vector<uint16_t> columns) {
+
+    QueryContext* context = std::any_cast<QueryContext*>(callbackContext);
+    UNUSED(columns);
+}
+
+
 int main(int argc, char* args[]) {
 
     ArgumentParser<STDOutput> parser(argc, args);
@@ -30,11 +45,11 @@ int main(int argc, char* args[]) {
         return EXIT_FAILURE;
     }
 
-    const int timeout = parser.getCommand<int>("--timeout");
     const std::string queryString = parser.getQueryString();
+    const int timeout = parser.getCommand<int>("--timeout");
+    std::unique_ptr<QueryContext> context = std::make_unique<QueryContext>(QueryContext{});
 
-
-    PortQuery pq{};
+    PortQuery pq{ QueryCallback, context.get(), timeout }; 
 
     return 0;
 }
