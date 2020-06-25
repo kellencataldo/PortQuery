@@ -3,10 +3,10 @@
 #include <algorithm>
 
 // helper class for std::visit. Constructs a callable which accepts various types based on deduction
-template<typename ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<typename ... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+// template<typename ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+// template<typename ... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
+// template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
 
 
 std::string getTokenString(const Token t) {

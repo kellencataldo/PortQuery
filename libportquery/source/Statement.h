@@ -12,7 +12,8 @@
 
 struct IExpression {
 
-    virtual bool shouldSubmitForScan(const Environment env) const = 0;
+    virtual bool shouldSubmitForScan(Environment env) const = 0;
+    virtual bool evaluate(Environment env) const = 0;
     virtual ~IExpression() { }
 };
 
@@ -21,7 +22,13 @@ using SOSQLExpression = std::unique_ptr<IExpression>;
 struct ORExpression : IExpression {
 
     ORExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
-    virtual bool shouldSubmitForScan(const Environment env) const override {
+
+    virtual bool evaluate(Environment env) const override {
+
+        return m_left->evaluate(env) || m_right->evaluate(env);
+    }
+
+    virtual bool shouldSubmitForScan(Environment env) const override {
 
         return m_left->shouldSubmitForScan(env) || m_right->shouldSubmitForScan(env);
     }
@@ -34,7 +41,12 @@ struct ANDExpression : IExpression {
 
     ANDExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-    virtual bool shouldSubmitForScan(const Environment env) const override {
+    virtual bool evaluate(Environment env) const override {
+
+        return m_left->evaluate(env) && m_right->evaluate(env);
+    }
+
+    virtual bool shouldSubmitForScan(Environment env) const override {
 
         return m_left->shouldSubmitForScan(env) && m_right->shouldSubmitForScan(env);
     }
@@ -47,7 +59,13 @@ struct NOTExpression : IExpression {
 
     NOTExpression(SOSQLExpression expr) : m_expr(std::move(expr)) { }
 
-    virtual bool shouldSubmitForScan(const Environment env) const override {
+    virtual bool evaluate(Environment env) const override {
+
+        return !m_expr->evaluate(env);
+    }
+
+
+    virtual bool shouldSubmitForScan(Environment env) const override {
 
         return m_expr->shouldSubmitForScan(env);
     }
@@ -60,10 +78,7 @@ struct BETWEENExpression : IExpression {
     BETWEENExpression(const Token terminal, const uint16_t lowerBound, const uint16_t upperBound) :
         m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
-    virtual bool shouldSubmitForScan(const Environment env) const override {
-        // do stuff here
-        return false;
-    }
+    virtual bool shouldSubmitForScan(Environment env) const override;
 
     Token m_terminal;
     uint16_t m_lowerBound;
@@ -75,10 +90,7 @@ struct ComparisonExpression : IExpression {
     ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) :
        m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
-    virtual bool shouldSubmitForScan(const Environment env) const override { 
-
-        return true; 
-    }
+    virtual bool shouldSubmitForScan(Environment env) const override;
 
     ComparisonToken::OpType m_op;
     Token m_LHSTerminal;
@@ -87,7 +99,7 @@ struct ComparisonExpression : IExpression {
 
 struct NULLExpression : IExpression {
 
-    virtual bool shouldSubmitForScan(const Environment env) const override { 
+    virtual bool shouldSubmitForScan(Environment env) const override { 
 
         return true;
     }
