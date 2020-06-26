@@ -1,23 +1,41 @@
 #include "Statement.h"
 
 
-bool BETWEENExpression::shouldSubmitForScan(Environment env) const {
+IExpression::PreNetworkEvaluation ORExpression::attemptPreNetworkEval(const uint16_t port) const {
 
-    if (env.availablePreSubmission(m_terminal)) {
+    const PreNetworkEvaluation LHSResult = m_left->attemptPreNetworkEval(port);
+    const PreNetworkEvaluation RHSResult = m_right->attemptPreNetworkEval(port);
 
-        return evaluate(env);
+    if (LHSResult == RHSResult) {
+
+        return LHSResult;
     }
 
-    return true;
+    else if (EvaluatedTruePreNet == LHSResult || EvaluatedTruePreNet == RHSResult) {
+
+        return EvaluatedTruePreNet;
+    }
+
+    // is they are both false it would be caught in teh call above
+    return UnableToEvaluatePreNet;
 }
 
 
-bool ComparisonExpression::shouldSubmitForScan(Environment env) const {
-    
-    if (env.availablePreSubmission(m_LHSTerminal) && env.availablePreSubmission(m_RHSTerminal)) {
+IExpression::PreNetworkEvaluation ANDExpression::attemptPreNetworkEval(const uint16_t port) const {
 
-        return evaluate(env);
+    const PreNetworkEvaluation LHSResult = m_left->attemptPreNetworkEval(port);
+    const PreNetworkEvaluation RHSResult = m_right->attemptPreNetworkEval(port);
+
+    if (LHSResult == RHSResult) {
+
+        return LHSResult;
     }
 
-    return true;
+    else if (EvaluatedFalsePreNet == LHSResult || EvaluatedFalsePreNet == RHSResult) {
+
+        return EvaluatedFalsePreNet;
+    }
+
+    // is they are both false it would be caught in teh call above
+    return UnableToEvaluatePreNet;
 }

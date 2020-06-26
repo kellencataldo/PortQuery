@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "Lexer.h"
-#include "Environment.h"
+#include "Network.h"
 
 
 #define UNUSED_PARAMETER(x) (void) (x)
@@ -12,8 +12,13 @@
 
 struct IExpression {
 
-    virtual bool shouldSubmitForScan(Environment env) const = 0;
-    virtual bool evaluate(Environment env) const = 0;
+    enum PreNetworkEvaluation {
+        EvaluatedTruePreNet,
+        EvaluatedFalsePreNet,
+        UnableToEvaluatePreNet
+    };
+
+    virtual PreNetworkEvaluation attemptPreNetworkEval(const uint16_t port) const = 0;
     virtual ~IExpression() { }
 };
 
@@ -23,15 +28,7 @@ struct ORExpression : IExpression {
 
     ORExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-    virtual bool evaluate(Environment env) const override {
-
-        return m_left->evaluate(env) || m_right->evaluate(env);
-    }
-
-    virtual bool shouldSubmitForScan(Environment env) const override {
-
-        return m_left->shouldSubmitForScan(env) || m_right->shouldSubmitForScan(env);
-    }
+    virtual PreNetworkEvaluation attemptPreNetworkEval(const uint16_t port) const override;
 
     SOSQLExpression m_left;
     SOSQLExpression m_right;
@@ -40,16 +37,8 @@ struct ORExpression : IExpression {
 struct ANDExpression : IExpression {
 
     ANDExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
+    virtual PreNetworkEvaluation attemptPreNetworkEval(const uint16_t port) const override;
 
-    virtual bool evaluate(Environment env) const override {
-
-        return m_left->evaluate(env) && m_right->evaluate(env);
-    }
-
-    virtual bool shouldSubmitForScan(Environment env) const override {
-
-        return m_left->shouldSubmitForScan(env) && m_right->shouldSubmitForScan(env);
-    }
 
     SOSQLExpression m_left;
     SOSQLExpression m_right;
@@ -59,15 +48,15 @@ struct NOTExpression : IExpression {
 
     NOTExpression(SOSQLExpression expr) : m_expr(std::move(expr)) { }
 
-    virtual bool evaluate(Environment env) const override {
+    virtual bool evaluate(const uint16_t port, NetworkEnvPtr netenv) const override {
 
-        return !m_expr->evaluate(env);
+        return !m_expr->evaluate(port, netenv);
     }
 
 
-    virtual bool shouldSubmitForScan(Environment env) const override {
+    virtual bool shouldSubmitForScan(const uint16_t port, NetworkEnvPtr netenv) const override {
 
-        return m_expr->shouldSubmitForScan(env);
+        return m_expr->shouldSubmitForScan(port, netenv);
     }
 
     SOSQLExpression m_expr;
@@ -78,7 +67,7 @@ struct BETWEENExpression : IExpression {
     BETWEENExpression(const Token terminal, const uint16_t lowerBound, const uint16_t upperBound) :
         m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
-    virtual bool shouldSubmitForScan(Environment env) const override;
+    virtual bool shouldSubmitForScan(uint16_t port, NetworkEnvPtr netenv) const override;
 
     Token m_terminal;
     uint16_t m_lowerBound;
@@ -90,7 +79,7 @@ struct ComparisonExpression : IExpression {
     ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) :
        m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
-    virtual bool shouldSubmitForScan(Environment env) const override;
+    virtual bool shouldSubmitForScan(const uint16_t port, NetworkEnvPtr netenv) const override;
 
     ComparisonToken::OpType m_op;
     Token m_LHSTerminal;
@@ -99,7 +88,7 @@ struct ComparisonExpression : IExpression {
 
 struct NULLExpression : IExpression {
 
-    virtual bool shouldSubmitForScan(Environment env) const override { 
+    virtual bool shouldSubmitForScan(const uint16_t port, NetworkEnvPtr netenv) const override { 
 
         return true;
     }

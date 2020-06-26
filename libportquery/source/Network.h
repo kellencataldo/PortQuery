@@ -2,42 +2,7 @@
 
 #include <string>
 #include <type_traits>
-
-/*
- *
- * Original idea: bad, hard to read and maintain, also... undefined behavior. Fun working with structured bindings though
- 
-
-template<unsigned int... bitPositions> struct structuredBindingGen { };
-
-template<int... bitPositions> struct binaryFlag {
-    unsigned int m_value;
-    static constexpr structuredBindingGen<bitPositions...> values = { };
-
-    bool isSet(const binaryFlag<bitPositions...> other) const {
-        return 0 != (m_value & other.m_value);
-    }
-};
-
-template<unsigned int... bitPositions> struct std::tuple_size<structuredBindingGen<bitPositions...>> : 
-    std::integral_constant<std::size_t, sizeof...(bitPositions)> { };
-
-template<std::size_t position, unsigned int ... bitPositions> struct std::tuple_element<position, structuredBindingGen<bitPositions...>> {
-    using type = binaryFlag<bitPositions...>; 
-};
-
-template<std::size_t position, unsigned int... bitPositions> binaryFlag<bitPositions...> get(structuredBindingGen<bitPositions...>) {
-    unsigned int positionsArray[] = { bitPositions... };
-    return { static_cast<unsigned int>(1) << positionsArray[position] };
-}
-
-template <unsigned int... bitPositions> binaryFlag <bitPositions...> operator|(binaryFlag<bitPositions...> lhs, binaryFlag<bitPositions...> rhs ) { 
-    return { lhs.m_value | rhs.m_value }; 
-}
-
-using protocolFlags = binaryFlag<0,1>;
-namespace Protocols { namespace { const auto [TCP, UDP] = protocolFlags::values; }; };
-*/
+#include <memory>
 
 
 template<typename T> struct EnableBinaryOperators {
@@ -74,8 +39,9 @@ template <> struct EnableBinaryOperators<NetworkProtocols> {
 };
 
 
-class Network {
+class NetworkEnvironment {
 
-    bool isValidAddress(const std::string& potentialURL);
+    
 };
 
+using NetworkEnvPtr = std::shared_ptr<NetworkEnvironment>;
