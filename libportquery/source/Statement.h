@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <algorithm>
+#include <tuple>
 
 #include "Lexer.h"
 #include "Network.h"
@@ -35,6 +36,7 @@ Tristate operator!(const Tristate rhs) {
 struct IExpression {
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const = 0;
+    static std::tuple<bool, uint16_t> getPreNetworkValue(const Token terminal, const uint16_t port);
     virtual ~IExpression() { }
 };
 
@@ -84,6 +86,11 @@ struct BETWEENExpression : IExpression {
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
 
+    static bool Evaluate(const uint16_t value, const uint16_t lowerBound, const uint16_t upperBound) {
+
+        return lowerBound <= value && value <= upperBound;
+    }
+
     Token m_terminal;
     uint16_t m_lowerBound;
     uint16_t m_upperBound;
@@ -95,6 +102,8 @@ struct ComparisonExpression : IExpression {
        m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+
+    static bool Evaluate(ComparisonToken::OpType, const uint16_t lhs, const uint16_t rhs);
 
     ComparisonToken::OpType m_op;
     Token m_LHSTerminal;
