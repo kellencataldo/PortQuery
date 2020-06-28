@@ -1,7 +1,7 @@
 #include <arpa/inet.h>
 
 #include "Network.h"
-
+/*
 bool Network::isValidAddress(const std::string& potentialURL) {
     
     struct sockaddr_in socketAddress = { };
@@ -11,3 +11,5 @@ bool Network::isValidAddress(const std::string& potentialURL) {
 
     return false;
 }
+
+*/

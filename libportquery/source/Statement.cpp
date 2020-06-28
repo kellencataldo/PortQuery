@@ -1,19 +1,34 @@
 #include "Statement.h"
 
 
+Tristate operator||(const Tristate lhs, const Tristate rhs) {
+    typedef typename std::underlying_type<Tristate>::type underlying;
+    return static_cast<Tristate>(std::max(static_cast<underlying>(lhs), static_cast<underlying>(rhs)));
+}
+
+Tristate operator&&(const Tristate lhs, const Tristate rhs) {
+    typedef typename std::underlying_type<Tristate>::type underlying;
+    return static_cast<Tristate>(std::min(static_cast<underlying>(lhs), static_cast<underlying>(rhs)));
+}
+
+Tristate operator!(const Tristate rhs) {
+    typedef typename std::underlying_type<Tristate>::type underlying;
+    return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
+}
+
+
 std::tuple<bool, uint16_t> IExpression::getPreNetworkValue(const Token terminal, const uint16_t port) {
 
-    return std::visit(overloaded {
-            [=] (QueryResultToken q) { return std::make_tuple(true, q.m_queryResult); },
-            [=] (NumericToken n)     { return std::make_tuple(true, n.m_value); },
-            [=] (auto)               { return std::make_tuple(false, 0); },  // better error handling needed
-            [=] (ColumnToken c) -> std::tuple<bool, uint16_t> { 
-                if (ColumnToken::PORT == c.m_column) {
-                    return std::make_tuple(true, port);
-                }
-                return std::make_tuple(false, 0);
-            } },
-        terminal);
+    auto t = std::visit(overloaded {
+                [=] (QueryResultToken q) { return std::make_tuple(true, q.m_queryResult); },
+                [=] (NumericToken n)     { return std::make_tuple(true, n.m_value); },
+                [=] (auto)               { return std::make_tuple<bool, uint16_t>(false, 0); },  // better error handling needed
+                [=] (ColumnToken c)      { return (ColumnToken::PORT == c.m_column) ? std::make_tuple(true, port) :
+                    std::make_tuple<bool, uint16_t>(false, 0);
+                } },
+            terminal);
+
+    return t;
 }
 
 
@@ -51,6 +66,7 @@ bool ComparisonExpression::Evaluate(ComparisonToken::OpType op, const uint16_t l
             return lhs != rhs;
         default:
             return false; // need better error handling 
+    }
 }
 
 
@@ -62,7 +78,7 @@ Tristate ComparisonExpression::attemptPreNetworkEval(const uint16_t port) const 
         const auto [RHSAvailable, RHSvalue] = IExpression::getPreNetworkValue(m_RHSTerminal, port);
         if (RHSAvailable) {
 
-            return ComparisonExpression::Evaluate(m_op, LHSValue, RHSvalue) ? Tristate:TRUE_STATE : Tristate::FALSE_STATE;
+            return ComparisonExpression::Evaluate(m_op, LHSValue, RHSvalue) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
         }
     }
 

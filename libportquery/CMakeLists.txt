@@ -5,6 +5,7 @@ add_library(libportquery STATIC
     source/Lexer.cpp
     source/Network.cpp
     source/Parser.cpp
+    source/Statement.cpp
     )
 
 

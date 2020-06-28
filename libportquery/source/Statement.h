@@ -17,21 +17,9 @@ enum class Tristate : int {
     TRUE_STATE = 1,
 };
 
-Tristate operator||(const Tristate lhs, const Tristate rhs) {
-    typedef typename std::underlying_type<Tristate>::type underlying;
-    return static_cast<Tristate>(std::max(static_cast<underlying>(lhs), static_cast<underlying>(rhs)));
-}
-
-Tristate operator&&(const Tristate lhs, const Tristate rhs) {
-    typedef typename std::underlying_type<Tristate>::type underlying;
-    return static_cast<Tristate>(std::min(static_cast<underlying>(lhs), static_cast<underlying>(rhs)));
-}
-
-Tristate operator!(const Tristate rhs) {
-    typedef typename std::underlying_type<Tristate>::type underlying;
-    return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
-}
-
+Tristate operator||(const Tristate lhs, const Tristate rhs);
+Tristate operator&&(const Tristate lhs, const Tristate rhs);
+Tristate operator!(const Tristate rhs);
 
 struct IExpression {
 
@@ -127,12 +115,18 @@ class SelectStatement {
             m_selectedSet(std::move(selectedSet)), m_tableReference(std::move(tableReference)), 
             m_tableExpression(std::move(tableExpression)) { }
 
+        const IExpression * const getTableExpression() const {
+
+            return m_tableExpression.get();
+        }
+
         SelectSet getSelectSet() const {
 
             return m_selectedSet;
         }
 
     private:
+
         SelectSet m_selectedSet;
         std::string m_tableReference;
         SOSQLExpression m_tableExpression;
