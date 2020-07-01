@@ -38,10 +38,3 @@ template <> struct EnableBinaryOperators<NetworkProtocols> {
     static const bool m_enable = true;
 };
 
-
-class NetworkEnvironment {
-
-    
-};
-
-using NetworkEnvPtr = std::shared_ptr<NetworkEnvironment>;

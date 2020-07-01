@@ -1,29 +1,37 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 
-#include "Lexer.h"
+#include "Network.h"
 
 
-class Environment {
+class IEnvironment {
+
+    public:
+        bool submitPortForScan(const uint16_t port, const NetworkProtocols requestedProtocols);
+};
+
+typedef std::shared_ptr<IEnvironment> (*FactoryGenerator)(const unsigned int threadCount);
+
+class EnvironmentFactory {
 
     public:
 
-        Environment() : m_port(0) { }
+         static void setGenerator(const FactoryGenerator generator) {
+            
+             m_generator = generator;
+         }
 
-        void setPort(const uint16_t port) {
+         static std::shared_ptr<IEnvironment> createEnvironment(const unsigned int threadCount) {
 
-            m_port = port;
-        }
-
-        bool availablePreSubmission(const Token t) const;
-        uint16_t retrieveTokenValue(const Token t);
+             return m_generator(threadCount);
+         }
 
     private:
-
-        uint16_t getColumnResult(ColumnToken::Column c);
-
-        uint16_t m_port;
-
-
+        static std::shared_ptr<IEnvironment> defaultGenerator(const unsigned int threadCount);
+        static FactoryGenerator m_generator;
 };
+
+FactoryGenerator EnvironmentFactory::m_generator = defaultGenerator;
+

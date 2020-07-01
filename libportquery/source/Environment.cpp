@@ -1,30 +1,22 @@
 #include "Environment.h"
 
 
-bool Environment::availablePreSubmission(const Token t) const {
+class NetworkEnvironment : IEnvironment {
 
-    return std::visit(overloaded {
-            [=] (ColumnToken c)     { return ColumnToken::PORT == c.m_column; },
-            [=] (NumericToken)      { return true; },
-            [=] (QueryResultToken)  { return true; },
-            [=] (auto) -> bool      { throw std::invalid_argument("Invalid token stored as expression primary"); } 
-        }, t);
+    public:
+        NetworkEnvironment(const unsigned int threadCount) : m_threadCount(threadCount) { }
+        bool submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) {
+
+            return true;
+        }
+
+    private:
+
+        uint16_t m_threadCount; 
+};
+
+
+std::shared_ptr<IEnvironment> EnvironmentFactory::defaultGenerator(const unsigned int threadCount) {
+
+    return std::make_shared<IEnvironment>(NetworkEnvironment{threadCount});
 }
-
-
-uint16_t Environment::retrieveTokenValue(const Token t) {
-
-    return std::visit(overloaded {
-            [=] (ColumnToken c)       { return getColumnResult(c.m_column); },
-            [=] (NumericToken n)      { return n.m_value; },
-            [=] (QueryResultToken q)  { return q.m_queryResult; },
-            [=] (auto) -> uint16_t    { throw std::invalid_argument("Invalid token stored as expression primary"); } 
-        }, t);
-}
-
-
-uint16_t Environment::getColumnResult(ColumnToken::Column c) {
-
-    return 0;
-}
-
