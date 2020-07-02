@@ -9,14 +9,14 @@
 
 
 class PortQuery {
-    public:
 
-        using PQCallback = std::function<void(std::any, std::vector<uint16_t>)>;
+    public:
 
         static constexpr uint16_t OPEN = 0;
         static constexpr uint16_t CLOSED = 1;
         static constexpr uint16_t REJECTED = 2;
 
+        using PQCallback = std::function<void(std::any, std::vector<uint16_t>)>;
         PortQuery(PQCallback const callback=nullptr, const std::any context=nullptr, const int timeout=TIMEOUT_DEFAULT) : 
             m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_selectStatement(nullptr) { }
 

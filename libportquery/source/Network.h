@@ -25,6 +25,13 @@ template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable,
     return lhs;
 }
 
+template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable, bool>::type operator==(const T lhs, const T rhs) {
+    typedef typename std::underlying_type<T>::type underlying;
+    return static_cast<underlying>(lhs) == static_cast<underlying>(rhs);
+}
+
+
+
 // other operators go here
 enum class NetworkProtocols {
     NONE = 0,

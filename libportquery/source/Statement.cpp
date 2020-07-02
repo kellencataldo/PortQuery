@@ -17,7 +17,7 @@ Tristate operator!(const Tristate rhs) {
 }
 
 
-std::tuple<bool, uint16_t> IExpression::getPreNetworkValue(const Token terminal, const uint16_t port) {
+std::tuple<bool, uint16_t> getPreNetworkValue(const Token terminal, const uint16_t port) {
 
     auto t = std::visit(overloaded {
                 [=] (QueryResultToken q) { return std::make_tuple(true, q.m_queryResult); },
@@ -32,9 +32,41 @@ std::tuple<bool, uint16_t> IExpression::getPreNetworkValue(const Token terminal,
 }
 
 
+NetworkProtocols getProtocolFromColumn(const ColumnToken::Column c) {
+
+    switch (c) {
+        case ColumnToken::TCP:
+            return NetworkProtocols::TCP;
+        case ColumnToken::UDP:
+            return NetworkProtocols::UDP;
+        default:
+            return NetworkProtocols::NONE;
+    }
+}
+
+NetworkProtocols getNetworkProtocolFromToken(const Token terminal) {
+
+    auto t = std::visit(overloaded {
+                [=] (QueryResultToken q) { return NetworkProtocols::NONE; },
+                [=] (NumericToken n)     { return NetworkProtocols::NONE; },
+                [=] (auto)               { return NetworkProtocols::NONE; },  // better error handling needed
+                [=] (ColumnToken c)      { return getProtocolFromColumn(c.m_column);
+                } },
+            terminal);
+
+    return t;
+}
+
+
+NetworkProtocols BETWEENExpression::collectRequiredProtocols() const {
+
+    return getNetworkProtocolFromToken(m_terminal);
+}
+
+
 Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
 
-    const auto [valAvailable, value] = IExpression::getPreNetworkValue(m_terminal, port);
+    const auto [valAvailable, value] = getPreNetworkValue(m_terminal, port);
     if (valAvailable) {
         
         if (BETWEENExpression::Evaluate(value, m_lowerBound, m_upperBound)) {
@@ -48,7 +80,11 @@ Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
     return Tristate::UNKNOWN_STATE;
 }
 
+NetworkProtocols ComparisonExpression::collectRequiredProtocols() const {
 
+    return getNetworkProtocolFromToken(m_LHSTerminal) | getNetworkProtocolFromToken(m_RHSTerminal);
+}
+ 
 bool ComparisonExpression::Evaluate(ComparisonToken::OpType op, const uint16_t lhs, const uint16_t rhs) {
 
     switch (op) {
@@ -72,10 +108,10 @@ bool ComparisonExpression::Evaluate(ComparisonToken::OpType op, const uint16_t l
 
 Tristate ComparisonExpression::attemptPreNetworkEval(const uint16_t port) const {
 
-    const auto [LHSAvailable, LHSValue] = IExpression::getPreNetworkValue(m_LHSTerminal, port);
+    const auto [LHSAvailable, LHSValue] = getPreNetworkValue(m_LHSTerminal, port);
     if (LHSAvailable) {
 
-        const auto [RHSAvailable, RHSvalue] = IExpression::getPreNetworkValue(m_RHSTerminal, port);
+        const auto [RHSAvailable, RHSvalue] = getPreNetworkValue(m_RHSTerminal, port);
         if (RHSAvailable) {
 
             return ComparisonExpression::Evaluate(m_op, LHSValue, RHSvalue) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
@@ -86,3 +122,13 @@ Tristate ComparisonExpression::attemptPreNetworkEval(const uint16_t port) const 
 }
 
 
+NetworkProtocols SelectStatement::collectRequiredProtocols() const {
+
+    NetworkProtocols requestedProtocols = NetworkProtocols::NONE;
+    for (auto i : m_selectedSet) {
+        requestedProtocols |= getProtocolFromColumn(i);
+    }
+
+    requestedProtocols |= m_tableExpression->collectRequiredProtocols();
+    return requestedProtocols;
+}

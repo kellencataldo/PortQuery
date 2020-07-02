@@ -24,7 +24,7 @@ Tristate operator!(const Tristate rhs);
 struct IExpression {
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const = 0;
-    static std::tuple<bool, uint16_t> getPreNetworkValue(const Token terminal, const uint16_t port);
+    virtual NetworkProtocols collectRequiredProtocols(void) const = 0;
     virtual ~IExpression() { }
 };
 
@@ -37,6 +37,11 @@ struct ORExpression : IExpression {
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
 
         return m_left->attemptPreNetworkEval(port) || m_right->attemptPreNetworkEval(port);
+    }
+
+    virtual NetworkProtocols collectRequiredProtocols(void) const override {
+
+        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
     }
 
     SOSQLExpression m_left;
@@ -52,6 +57,12 @@ struct ANDExpression : IExpression {
         return m_left->attemptPreNetworkEval(port) && m_right->attemptPreNetworkEval(port);
     }
 
+    virtual NetworkProtocols collectRequiredProtocols(void) const override {
+
+        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
+    }
+
+
     SOSQLExpression m_left;
     SOSQLExpression m_right;
 };
@@ -64,6 +75,12 @@ struct NOTExpression : IExpression {
         return !m_expr->attemptPreNetworkEval(port);
     }
 
+    virtual NetworkProtocols collectRequiredProtocols(void) const override {
+
+        return m_expr->collectRequiredProtocols();
+    }
+
+
     SOSQLExpression m_expr;
 };
 
@@ -73,7 +90,7 @@ struct BETWEENExpression : IExpression {
         m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
-
+    virtual NetworkProtocols collectRequiredProtocols(void) const override;
     static bool Evaluate(const uint16_t value, const uint16_t lowerBound, const uint16_t upperBound) {
 
         return lowerBound <= value && value <= upperBound;
@@ -90,7 +107,7 @@ struct ComparisonExpression : IExpression {
        m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
-
+    virtual NetworkProtocols collectRequiredProtocols(void) const override;
     static bool Evaluate(ComparisonToken::OpType, const uint16_t lhs, const uint16_t rhs);
 
     ComparisonToken::OpType m_op;
@@ -104,10 +121,17 @@ struct NULLExpression : IExpression {
 
         return Tristate::TRUE_STATE;
     }
+
+
+    virtual NetworkProtocols collectRequiredProtocols(void) const override {
+
+         return NetworkProtocols::NONE;
+    }
+
 };
 
-using SelectSet = std::vector<ColumnToken::Column>;
 
+using SelectSet = std::vector<ColumnToken::Column>;
 
 class SelectStatement {
     public:
@@ -115,6 +139,7 @@ class SelectStatement {
             m_selectedSet(std::move(selectedSet)), m_tableReference(std::move(tableReference)), 
             m_tableExpression(std::move(tableExpression)) { }
 
+        NetworkProtocols collectRequiredProtocols() const;
         const IExpression * const getTableExpression() const {
 
             return m_tableExpression.get();

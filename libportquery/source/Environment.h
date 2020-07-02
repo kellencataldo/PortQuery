@@ -33,5 +33,5 @@ class EnvironmentFactory {
         static FactoryGenerator m_generator;
 };
 
-FactoryGenerator EnvironmentFactory::m_generator = defaultGenerator;
 
+FactoryGenerator EnvironmentFactory::m_generator = defaultGenerator;
