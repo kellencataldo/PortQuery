@@ -9,6 +9,20 @@
 // template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
 
 
+template <typename Subset, typename Superset> Subset variantSubsetCast(Superset from) {
+
+    return std::visit([] (auto&& elem) -> Subset {
+            using Subtype = std::decay_t<decltype(elem)>;
+            if constexpr (std::is_constructible_v<Subset, Subtype>) {
+                return Subset(std::forward<decltype(elem)>(elem));
+            }
+            else {
+                throw std::invalid_argument("Unable to convert variant to subset");
+            }
+        }, std::forward<Superset>(from));
+}
+
+
 std::string getTokenString(const Token t) {
 
     return std::visit(overloaded {
@@ -144,7 +158,10 @@ SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
-    return std::make_unique<ComparisonExpression>(ComparisonExpression{comp.m_opType, lhs, rhs});
+    Terminal LHSTerminal = variantSubsetCast<Terminal, Token>(lhs);
+    Terminal RHSTerminal = variantSubsetCast<Terminal, Token>(rhs);
+
+    return std::make_unique<ComparisonExpression>(ComparisonExpression{comp.m_opType, LHSTerminal, RHSTerminal});
 }
 
 
@@ -162,7 +179,10 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
-    return std::make_unique<ComparisonExpression>(ComparisonExpression{op, lhs, rhs});
+    Terminal LHSTerminal = variantSubsetCast<Terminal, Token>(lhs);
+    Terminal RHSTerminal = variantSubsetCast<Terminal, Token>(rhs);
+
+    return std::make_unique<ComparisonExpression>(ComparisonExpression{op, LHSTerminal, RHSTerminal});
 }
 
 
@@ -183,7 +203,8 @@ SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
     }
 
     const NumericToken upperBound = std::get<NumericToken>(m_lexer.nextToken());
-    return std::make_unique<BETWEENExpression>(BETWEENExpression{lhs, lowerBound.m_value, upperBound.m_value});
+    Terminal terminal = variantSubsetCast<Terminal, Token>(lhs);
+    return std::make_unique<BETWEENExpression>(BETWEENExpression{terminal, lowerBound.m_value, upperBound.m_value});
 }
 
 SelectSet Parser::parseSelectSetQuantifier() {

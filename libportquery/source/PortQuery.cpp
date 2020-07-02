@@ -30,8 +30,6 @@ bool PortQuery::prepare(std::string queryString) {
 
 bool PortQuery::run() {
 
-    m_selectStatet
-
 
 
     return true;

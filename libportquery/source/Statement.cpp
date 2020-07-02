@@ -17,25 +17,11 @@ Tristate operator!(const Tristate rhs) {
 }
 
 
-template <typename Subset, typename Superset> Subset VariantSubsetCast(Superset from) {
-
-    return std::visit([] (auto&& elem) -> Subset {
-            using Subtype = std::decay_t<decltype(elem)>;
-            if constexpr (std::is_constructible_v<Subset, Subtype>) {
-                return Subset(std::forward<decltype(elem)>(elem));
-            }
-            else {
-                throw std::invalid_argument("Unable to convert variant to subset");
-            }
-        }, std::forward<Superset>(from));
-}
-
-std::tuple<bool, uint16_t> getPreNetworkValue(const Token terminal, const uint16_t port) {
+std::tuple<bool, uint16_t> getPreNetworkValue(const Terminal terminal, const uint16_t port) {
 
     auto t = std::visit(overloaded {
                 [=] (QueryResultToken q) { return std::make_tuple(true, q.m_queryResult); },
                 [=] (NumericToken n)     { return std::make_tuple(true, n.m_value); },
-                [=] (auto)               { return std::make_tuple<bool, uint16_t>(false, 0); },  // better error handling needed
                 [=] (ColumnToken c)      { return (ColumnToken::PORT == c.m_column) ? std::make_tuple(true, port) :
                     std::make_tuple<bool, uint16_t>(false, 0);
                 } },
@@ -57,12 +43,11 @@ NetworkProtocols getProtocolFromColumn(const ColumnToken::Column c) {
     }
 }
 
-NetworkProtocols getNetworkProtocolFromToken(const Token terminal) {
+NetworkProtocols getNetworkProtocolFromToken(const Terminal terminal) {
 
     auto t = std::visit(overloaded {
                 [=] (QueryResultToken q) { return NetworkProtocols::NONE; },
                 [=] (NumericToken n)     { return NetworkProtocols::NONE; },
-                [=] (auto)               { return NetworkProtocols::NONE; },  // better error handling needed
                 [=] (ColumnToken c)      { return getProtocolFromColumn(c.m_column);
                 } },
             terminal);
