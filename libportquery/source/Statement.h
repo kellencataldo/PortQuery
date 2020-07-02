@@ -84,9 +84,12 @@ struct NOTExpression : IExpression {
     SOSQLExpression m_expr;
 };
 
+
+using Terminal = std::variant<ColumnToken, NumericToken, QueryResultToken>;
+
 struct BETWEENExpression : IExpression {
 
-    BETWEENExpression(const Token terminal, const uint16_t lowerBound, const uint16_t upperBound) :
+    BETWEENExpression(const Terminal terminal, const uint16_t lowerBound, const uint16_t upperBound) :
         m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
@@ -96,14 +99,14 @@ struct BETWEENExpression : IExpression {
         return lowerBound <= value && value <= upperBound;
     }
 
-    Token m_terminal;
+    Terminal m_terminal;
     uint16_t m_lowerBound;
     uint16_t m_upperBound;
 };
 
 struct ComparisonExpression : IExpression {
 
-    ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) :
+    ComparisonExpression(const ComparisonToken::OpType op, const Terminal lhs, const Terminal rhs) :
        m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
 
     virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
@@ -111,8 +114,8 @@ struct ComparisonExpression : IExpression {
     static bool Evaluate(ComparisonToken::OpType, const uint16_t lhs, const uint16_t rhs);
 
     ComparisonToken::OpType m_op;
-    Token m_LHSTerminal;
-    Token m_RHSTerminal;
+    Terminal m_LHSTerminal;
+    Terminal m_RHSTerminal;
 };
 
 struct NULLExpression : IExpression {

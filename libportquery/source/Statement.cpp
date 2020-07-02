@@ -17,6 +17,19 @@ Tristate operator!(const Tristate rhs) {
 }
 
 
+template <typename Subset, typename Superset> Subset VariantSubsetCast(Superset from) {
+
+    return std::visit([] (auto&& elem) -> Subset {
+            using Subtype = std::decay_t<decltype(elem)>;
+            if constexpr (std::is_constructible_v<Subset, Subtype>) {
+                return Subset(std::forward<decltype(elem)>(elem));
+            }
+            else {
+                throw std::invalid_argument("Unable to convert variant to subset");
+            }
+        }, std::forward<Superset>(from));
+}
+
 std::tuple<bool, uint16_t> getPreNetworkValue(const Token terminal, const uint16_t port) {
 
     auto t = std::visit(overloaded {
