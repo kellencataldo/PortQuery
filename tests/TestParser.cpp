@@ -65,21 +65,15 @@ TEST(ParseSOSQLStatements, ParseWHEREStatement) {
 
 TEST(ParseSOSQLStatements, CollectRequiredProtocols) {
 
+    // should be expanded.
     const auto select_T1 = Parser("SELECT * FROM WWW.YAHOO.COM WHERE UDP = CLOSED").parseSOSQLStatement();
-    const IExpression* const AST_T1 = select_T1->getTableExpression();
-    EXPECT_TRUE(NetworkProtocols::UDP == AST_T1->collectRequiredProtocols());
-    std::cout << static_cast<unsigned int>(AST_T1->collectRequiredProtocols()) << std::endl;
-
-
+    EXPECT_TRUE((NetworkProtocols::UDP | NetworkProtocols::TCP) == select_T1->collectRequiredProtocols());
 
     const auto select_T2 = Parser("SELECT PORT, UDP FROM WWW.YAHOO.COM").parseSOSQLStatement();
-    const IExpression* const AST_T2 = select_T2->getTableExpression();
-    EXPECT_TRUE(NetworkProtocols::NONE == AST_T2->collectRequiredProtocols());
-    std::cout << static_cast<unsigned int>(AST_T2->collectRequiredProtocols());
+    EXPECT_TRUE(NetworkProtocols::UDP == select_T2->collectRequiredProtocols());
 
     const auto select_T3 = Parser("SELECT PORT FROM WWW.YAHOO.COM WHERE UDP = CLOSED AND REJECTED = TCP").parseSOSQLStatement();
-    const IExpression* const AST_T3 = select_T3->getTableExpression();
-    EXPECT_TRUE((NetworkProtocols::UDP | NetworkProtocols::TCP) == AST_T3->collectRequiredProtocols());
+    EXPECT_TRUE((NetworkProtocols::UDP | NetworkProtocols::TCP) == select_T3->collectRequiredProtocols());
 }
 
 
