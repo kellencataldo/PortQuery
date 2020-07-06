@@ -74,6 +74,12 @@ TEST(ParseSOSQLStatements, CollectRequiredProtocols) {
 
     const auto select_T3 = Parser("SELECT PORT FROM WWW.YAHOO.COM WHERE UDP = CLOSED AND REJECTED = TCP").parseSOSQLStatement();
     EXPECT_TRUE((NetworkProtocols::UDP | NetworkProtocols::TCP) == select_T3->collectRequiredProtocols());
+
+    const auto select_T4 = Parser("SELECT PORT FROM WWW.YAHOO.COM WHERE PORT < 40").parseSOSQLStatement();
+    EXPECT_TRUE(NetworkProtocols::NONE == select_T4->collectRequiredProtocols());
+
+    const auto select_T5 = Parser("SELECT TCP FROM WWW.YAHOO.COM WHERE PORT < 40").parseSOSQLStatement();
+    EXPECT_TRUE(NetworkProtocols::NONE == select_T4->collectRequiredProtocols());
 }
 
 

@@ -51,5 +51,9 @@ int main(int argc, char* args[]) {
 
     PortQuery pq{ QueryCallback, context.get(), timeout }; 
 
+    pq.execute("cool");
+    const char ugh[] = "coool";
+    pq.execute(ugh);
+
     return 0;
 }
