@@ -43,6 +43,7 @@ NetworkProtocols getProtocolFromColumn(const ColumnToken::Column c) {
     }
 }
 
+
 NetworkProtocols getNetworkProtocolFromToken(const Terminal terminal) {
 
     auto t = std::visit(overloaded {
@@ -66,23 +67,20 @@ Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
 
     const auto [valAvailable, value] = getPreNetworkValue(m_terminal, port);
     if (valAvailable) {
-        
-        if (BETWEENExpression::Evaluate(value, m_lowerBound, m_upperBound)) {
 
-            return Tristate::TRUE_STATE;
-        }
-
-        return Tristate::FALSE_STATE;
+        return BETWEENExpression::Evaluate(value, m_lowerBound, m_upperBound) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
     }
 
     return Tristate::UNKNOWN_STATE;
 }
 
+
 NetworkProtocols ComparisonExpression::collectRequiredProtocols() const {
 
     return getNetworkProtocolFromToken(m_LHSTerminal) | getNetworkProtocolFromToken(m_RHSTerminal);
 }
- 
+
+
 bool ComparisonExpression::Evaluate(ComparisonToken::OpType op, const uint16_t lhs, const uint16_t rhs) {
 
     switch (op) {

@@ -17,8 +17,12 @@ class PortQuery {
         static constexpr uint16_t REJECTED = 2;
 
         using PQCallback = std::function<void(std::any, std::vector<uint16_t>)>;
-        PortQuery(PQCallback const callback=nullptr, const std::any context=nullptr, const int timeout=TIMEOUT_DEFAULT) : 
-            m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_selectStatement(nullptr) { }
+        PortQuery(PQCallback const callback=nullptr, 
+                const std::any context=nullptr, 
+                const int timeout=TIMEOUT_DEFAULT,
+                const int threadCount=THREADCOUNT_DEFAULT) : 
+            m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount),
+            m_selectStatement(nullptr) { }
 
         bool prepare(std::string queryString);
         bool run();
@@ -50,6 +54,8 @@ class PortQuery {
 
         static constexpr int TIMEOUT_DEFAULT = 2;
         int m_timeout;
+        static constexpr int THREADCOUNT_DEFAULT = 0;
+        int m_threadCount;
 
         PQCallback m_userCallback;
         std::any m_userContext;

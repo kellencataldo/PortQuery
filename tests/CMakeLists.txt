@@ -16,9 +16,11 @@ add_executable(tests
     ${CMAKE_SOURCE_DIR}/libportquery/source/Network.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/Parser.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/Statement.cpp
+    ${CMAKE_SOURCE_DIR}/libportquery/source/PortQuery.cpp
     TestArgumentParser.cpp
     TestLexer.cpp
     TestParser.cpp
+    TestPortQuery.cpp
     )
 
 set_target_properties(tests PROPERTIES

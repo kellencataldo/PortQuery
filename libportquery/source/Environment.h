@@ -12,26 +12,28 @@ class IEnvironment {
         bool submitPortForScan(const uint16_t port, const NetworkProtocols requestedProtocols);
 };
 
-typedef std::shared_ptr<IEnvironment> (*FactoryGenerator)(const unsigned int threadCount);
+
+using GeneratorFunction = std::shared_ptr<IEnvironment> (*)(const int threadCount);
+using EnvironmentPtr = std::shared_ptr<IEnvironment>;
 
 class EnvironmentFactory {
 
     public:
 
-         static void setGenerator(const FactoryGenerator generator) {
+         static void setGenerator(const GeneratorFunction generator) {
             
              m_generator = generator;
          }
 
-         static std::shared_ptr<IEnvironment> createEnvironment(const unsigned int threadCount) {
+         static EnvironmentPtr createEnvironment(const unsigned int threadCount) {
 
              return m_generator(threadCount);
          }
 
     private:
-        static std::shared_ptr<IEnvironment> defaultGenerator(const unsigned int threadCount);
-        static FactoryGenerator m_generator;
+        static std::shared_ptr<IEnvironment> defaultGenerator(const int threadCount);
+        static GeneratorFunction m_generator;
 };
 
 
-FactoryGenerator EnvironmentFactory::m_generator = defaultGenerator;
+GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;

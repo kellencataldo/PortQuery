@@ -2,12 +2,15 @@
 
 #include "PortQuery.h"
 #include "Parser.h"
+#include "Network.h"
+#include "Environment.h"
 
 
 bool PortQuery::prepare(std::string queryString) {
 
     if (m_selectStatement) {
 
+        // maybe just finalize automatically here?
         m_errorString = "Previous query has not been finalized";
         return false;
     }
@@ -30,13 +33,25 @@ bool PortQuery::prepare(std::string queryString) {
 
 bool PortQuery::run() {
 
+    static constexpr uint16_t MAX_PORT = static_cast<uint16_t>(-1);
+    const NetworkProtocols requiredProtocols = m_selectStatement->collectRequiredProtocols();
 
+    EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
+    for (uint16_t port = 0; port <= MAX_PORT; port++) {
+
+        if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(port)) {
+
+            env->submitPortForScan(port, requiredProtocols);
+        }
+    }
 
     return true;
 }
 
 
 bool PortQuery::finalize() {
+
+    m_errorString.clear();
     if (m_selectStatement) {
 
         m_selectStatement.reset();
@@ -44,7 +59,6 @@ bool PortQuery::finalize() {
         return true;
     }
 
-    m_errorString = "No query prepared";
     return false;
 }
 

@@ -136,16 +136,17 @@ struct NULLExpression : IExpression {
 
 using SelectSet = std::vector<ColumnToken::Column>;
 
-class SelectStatement {
+class SelectStatement : IExpression {
     public:
         SelectStatement(SelectSet selectedSet, std::string tableReference, SOSQLExpression tableExpression) : 
             m_selectedSet(std::move(selectedSet)), m_tableReference(std::move(tableReference)), 
             m_tableExpression(std::move(tableExpression)) { }
 
-        NetworkProtocols collectRequiredProtocols() const;
-        const IExpression * const getTableExpression() const {
 
-            return m_tableExpression.get();
+        virtual NetworkProtocols collectRequiredProtocols(void) const override;
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
+
+            return m_tableExpression->attemptPreNetworkEval(port);
         }
 
         SelectSet getSelectSet() const {
@@ -161,5 +162,3 @@ class SelectStatement {
 };
 
 typedef std::unique_ptr<SelectStatement> SOSQLSelectStatement;
-
-
