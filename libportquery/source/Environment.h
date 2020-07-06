@@ -9,7 +9,7 @@
 class IEnvironment {
 
     public:
-        bool submitPortForScan(const uint16_t port, const NetworkProtocols requestedProtocols);
+        virtual bool submitPortForScan(const uint16_t port, const NetworkProtocols requestedProtocols) = 0;
 };
 
 
@@ -31,9 +31,6 @@ class EnvironmentFactory {
          }
 
     private:
-        static std::shared_ptr<IEnvironment> defaultGenerator(const int threadCount);
+        static EnvironmentPtr defaultGenerator(const int threadCount);
         static GeneratorFunction m_generator;
 };
-
-
-GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;

@@ -1,11 +1,11 @@
 #include "Environment.h"
 
 
-class NetworkEnvironment : IEnvironment {
+class NetworkEnvironment : public IEnvironment {
 
     public:
         NetworkEnvironment(const int threadCount) : m_threadCount(threadCount) { }
-        bool submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) {
+        virtual bool submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) override {
 
             return true;
         }
@@ -16,7 +16,9 @@ class NetworkEnvironment : IEnvironment {
 };
 
 
-std::shared_ptr<IEnvironment> EnvironmentFactory::defaultGenerator(const int threadCount) {
+EnvironmentPtr EnvironmentFactory::defaultGenerator(const int threadCount) {
 
-    return std::make_shared<IEnvironment>(NetworkEnvironment{threadCount});
+    return std::make_shared<NetworkEnvironment>(NetworkEnvironment{threadCount});
 }
+
+GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;

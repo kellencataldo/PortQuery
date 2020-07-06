@@ -16,6 +16,7 @@ add_executable(tests
     ${CMAKE_SOURCE_DIR}/libportquery/source/Network.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/Parser.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/Statement.cpp
+    ${CMAKE_SOURCE_DIR}/libportquery/source/Environment.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/PortQuery.cpp
     TestArgumentParser.cpp
     TestLexer.cpp
@@ -30,5 +31,5 @@ set_target_properties(tests PROPERTIES
     PREFIX ""
 )
 
-target_link_libraries(tests gtest_main)
+target_link_libraries(tests gmock gtest_main)
 add_test(NAME unit_tests COMMAND tests)
