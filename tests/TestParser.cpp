@@ -79,7 +79,7 @@ TEST(ParseSOSQLStatements, CollectRequiredProtocols) {
     EXPECT_TRUE(NetworkProtocols::NONE == select_T4->collectRequiredProtocols());
 
     const auto select_T5 = Parser("SELECT TCP FROM WWW.YAHOO.COM WHERE PORT < 40").parseSOSQLStatement();
-    EXPECT_TRUE(NetworkProtocols::NONE == select_T4->collectRequiredProtocols());
+    EXPECT_TRUE(NetworkProtocols::TCP == select_T5->collectRequiredProtocols());
 }
 
 
