@@ -5,6 +5,8 @@
 #include "Network.h"
 #include "Environment.h"
 
+#include <iostream>
+
 
 bool PortQuery::prepare(std::string queryString) {
 
@@ -33,15 +35,15 @@ bool PortQuery::prepare(std::string queryString) {
 
 bool PortQuery::run() {
 
-    static constexpr uint16_t MAX_PORT = static_cast<uint16_t>(-1);
+    static constexpr uint32_t MAX_PORT = static_cast<uint16_t>(-1);
     const NetworkProtocols requiredProtocols = m_selectStatement->collectRequiredProtocols();
 
     EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
-    for (uint16_t port = 0; port <= MAX_PORT; port++) {
+    for (uint32_t port = 0; port <= MAX_PORT; port++) {
 
         if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(port)) {
 
-            env->submitPortForScan(port, requiredProtocols);
+            env->submitPortForScan(static_cast<uint16_t>(port), requiredProtocols);
         }
     }
 
