@@ -28,9 +28,7 @@ TEST(RunScan, ExpectedNumberOfTokensSubmitted) {
     EnvironmentFactory::setGenerator(mockGenerator);
     EnvironmentPtr baseEnv = mockGenerator(0);
     std::shared_ptr<MockEnvironment> mockEnv = std::dynamic_pointer_cast<MockEnvironment>(baseEnv);
-    EXPECT_CALL(*mockEnv, submitPortForScan(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(*mockEnv, submitPortForScan(_, _)).Times(1);
     PortQuery pq;
-    pq.prepare("SELECT * FROM WWW.GOOGLE.COM WHERE PORT = 1000");
-    pq.run();
-    pq.finalize();
+    pq.execute("SELECT * FROM WWW.GOOGLE.COM WHERE PORT = 1000");
 }

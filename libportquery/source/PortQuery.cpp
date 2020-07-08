@@ -65,6 +65,11 @@ bool PortQuery::finalize() {
 }
 
 bool PortQuery::execute(std::string queryString) { 
+    if (prepare(queryString) && run() && finalize()) {
+
+        return true;
+    }
+
     return false;
 }
 
