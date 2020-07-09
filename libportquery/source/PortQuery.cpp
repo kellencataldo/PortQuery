@@ -5,8 +5,6 @@
 #include "Network.h"
 #include "Environment.h"
 
-#include <iostream>
-
 
 bool PortQuery::prepare(std::string queryString) {
 
