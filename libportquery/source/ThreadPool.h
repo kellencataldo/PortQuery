@@ -9,10 +9,10 @@
 #include <future>
 
 
-template<typename WorkType> class ThreadSafeWorkQueue {
+class ThreadSafeWorkQueue {
 
     public:
-
+        using WorkType = std::function<void(void)>;
         static_assert(std::is_move_constructible<WorkType>::value, "");
         static_assert(std::is_move_assignable<WorkType>::value, "");
 
@@ -65,7 +65,7 @@ class ThreadPool
         void workerLoop(const unsigned int startQueue);
 
         static constexpr unsigned int MAX_LOOPS = 1;
-        std::vector<ThreadSafeWorkQueue<std::function<void(void)>>> m_queues;
+        std::vector<ThreadSafeWorkQueue> m_queues;
         std::vector<std::thread> m_threads;
         int m_threadCount;
         std::atomic_uint m_nextQueue;

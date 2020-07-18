@@ -1,14 +1,14 @@
 #include "ThreadPool.h"
 
 
-template <typename WorkType> void ThreadSafeWorkQueue<WorkType>::blockingPush(const WorkType&& work) {
+void ThreadSafeWorkQueue::blockingPush(const WorkType&& work) {
     std::unique_lock lock(m_mutex);
-    m_queue.emplace(std::forward<WorkType>(work));
+    m_queue.emplace(work);
     m_ready.notify_one();
 }
 
 
-template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPush(const WorkType&& work) {
+bool ThreadSafeWorkQueue::nonBlockingPush(const WorkType&& work) {
     std::unique_lock lock(m_mutex, std::try_to_lock);
     if (!lock.owns_lock()) {
         return false;
@@ -20,7 +20,7 @@ template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPush
 }
 
 
-template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::blockingPop(WorkType& work) {
+bool ThreadSafeWorkQueue::blockingPop(WorkType& work) {
     std::unique_lock lock(m_mutex);
     while(m_queue.empty() && !m_done) {
         m_ready.wait(lock); 
@@ -36,7 +36,7 @@ template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::blockingPop(Wor
 }
 
 
-template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPop(WorkType& work) { 
+bool ThreadSafeWorkQueue::nonBlockingPop(WorkType& work) { 
     std::unique_lock lock(m_mutex, std::try_to_lock);
     if(!lock.owns_lock() || m_queue.empty()) {
         return false;
@@ -48,14 +48,14 @@ template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPop(
 }
 
 
-template <typename WorkType> void ThreadSafeWorkQueue<WorkType>::setDone() {
+void ThreadSafeWorkQueue::setDone() {
     std::unique_lock lock(m_mutex);
     m_done = true;
     m_ready.notify_all();
 }
 
 
-template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::empty() const {
+bool ThreadSafeWorkQueue::empty() const {
     std::unique_lock lock(m_mutex);
     return m_queue.empty();
 }
