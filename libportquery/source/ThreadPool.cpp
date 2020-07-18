@@ -36,7 +36,7 @@ template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::blockingPop(Wor
 }
 
 
-template <typename workType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPop(WorkType& work) { 
+template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPop(WorkType& work) { 
     std::unique_lock lock(m_mutex, std::try_to_lock);
     if(!lock.owns_lock() || m_queue.empty()) {
         return false;
