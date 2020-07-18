@@ -1,26 +1,26 @@
 #include "ThreadPool.h"
 
 
-template <typename TaskType> void ThreadSafeTaskQueue<TaskType>::blockingPush(const TaskType&& task) {
+template <typename WorkType> void ThreadSafeWorkQueue<WorkType>::blockingPush(const WorkType&& work) {
     std::unique_lock lock(m_mutex);
-    m_queue.emplace(std::forward<TaskType>(task));
+    m_queue.emplace(std::forward<WorkType>(work));
     m_ready.notify_one();
 }
 
 
-template <typename TaskType> bool ThreadSafeTaskQueue<TaskType>::nonBlockingPush(const TaskType&& task) {
+template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPush(const WorkType&& work) {
     std::unique_lock lock(m_mutex, std::try_to_lock);
     if (!lock.owns_lock()) {
         return false;
     }
 
-    m_queue.emplace(task);
+    m_queue.emplace(work);
     m_ready.notify_one();
     return true;
 }
 
 
-template <typename TaskType> bool ThreadSafeTaskQueue<TaskType>::blockingPop(TaskType& task) {
+template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::blockingPop(WorkType& work) {
     std::unique_lock lock(m_mutex);
     while(m_queue.empty() && !m_done) {
         m_ready.wait(lock); 
@@ -30,32 +30,32 @@ template <typename TaskType> bool ThreadSafeTaskQueue<TaskType>::blockingPop(Tas
         return false;
     }
 
-    task = std::move(m_queue.front());
+    work = std::move(m_queue.front());
     m_queue.pop();
     return true;
 }
 
 
-template <typename TaskType> bool ThreadSafeTaskQueue<TaskType>::nonBlockingPop(TaskType& task) { 
+template <typename workType> bool ThreadSafeWorkQueue<WorkType>::nonBlockingPop(WorkType& work) { 
     std::unique_lock lock(m_mutex, std::try_to_lock);
     if(!lock.owns_lock() || m_queue.empty()) {
         return false;
     }
 
-    task = std::move(m_queue.front());
+    work = std::move(m_queue.front());
     m_queue.pop();
     return true;
 }
 
 
-template <typename TaskType> void ThreadSafeTaskQueue<TaskType>::setDone() {
+template <typename WorkType> void ThreadSafeWorkQueue<WorkType>::setDone() {
     std::unique_lock lock(m_mutex);
     m_done = true;
     m_ready.notify_all();
 }
 
 
-template <typename TaskType> bool ThreadSafeTaskQueue<TaskType>::empty() const {
+template <typename WorkType> bool ThreadSafeWorkQueue<WorkType>::empty() const {
     std::unique_lock lock(m_mutex);
     return m_queue.empty();
 }
