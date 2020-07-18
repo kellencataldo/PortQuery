@@ -9,26 +9,26 @@
 #include <future>
 
 
-template<typename TaskType> class ThreadSafeTaskQueue {
+template<typename WorkType> class ThreadSafeWorkQueue {
 
     public:
 
-        static_assert(std::is_move_constructible<TaskType>::value, "");
-        static_assert(std::is_move_assignable<TaskType>::value, "");
+        static_assert(std::is_move_constructible<WorkType>::value, "");
+        static_assert(std::is_move_assignable<WorkType>::value, "");
 
-        ThreadSafeTaskQueue() : m_done(false) { }
+        ThreadSafeWorkQueue() : m_done(false) { }
 
-        void blockingPush(const TaskType&& task);
-        bool nonBlockingPush(const TaskType&& task);
+        void blockingPush(const WorkType&& work);
+        bool nonBlockingPush(const WorkType&& work);
 
-        bool blockingPop(TaskType& task);
-        bool nonBlockingPop(TaskType& task);
+        bool blockingPop(WorkType& work);
+        bool nonBlockingPop(WorkType& work);
 
         void setDone();
         bool empty() const;
 
 private:
-	std::queue<TaskType> m_queue;
+	std::queue<WorkType> m_queue;
 	mutable std::mutex m_mutex;
 	std::condition_variable m_ready;
 	bool m_done;
@@ -65,7 +65,7 @@ class ThreadPool
         void workerLoop(const unsigned int startQueue);
 
         static constexpr unsigned int MAX_LOOPS = 1;
-        std::vector<ThreadSafeTaskQueue<std::function<void(void)>>> m_queues;
+        std::vector<ThreadSafeWorkQueue<std::function<void(void)>>> m_queues;
         std::vector<std::thread> m_threads;
         int m_threadCount;
         std::atomic_uint m_nextQueue;
