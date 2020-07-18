@@ -6,6 +6,7 @@ add_library(libportquery STATIC
     source/Network.cpp
     source/Parser.cpp
     source/Statement.cpp
+    source/ThreadPool.cpp
     )
 
 
