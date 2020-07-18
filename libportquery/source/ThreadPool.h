@@ -28,17 +28,17 @@ class ThreadSafeWorkQueue {
         bool empty() const;
 
 private:
+	bool m_done;
 	std::queue<WorkType> m_queue;
 	mutable std::mutex m_mutex;
 	std::condition_variable m_ready;
-	bool m_done;
 };
 
 
 class ThreadPool
 {
     public:
-        ThreadPool(const int threadCount) : m_nextQueue(0) {
+        ThreadPool(const int threadCount) : m_nextQueue{0} {
 
             m_threadCount = threadCount != 0 ? threadCount : std::thread::hardware_concurrency();
 		    for (unsigned int startQueue = 0; startQueue < m_threadCount; startQueue++) {
@@ -69,4 +69,5 @@ class ThreadPool
         std::vector<std::thread> m_threads;
         int m_threadCount;
         std::atomic_uint m_nextQueue;
+ 
 };

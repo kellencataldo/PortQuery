@@ -1,24 +1,13 @@
 #include "Environment.h"
 
 
-class NetworkEnvironment : public IEnvironment {
+GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;
 
-    public:
-        NetworkEnvironment(const int threadCount) : m_threadCount(threadCount) { }
-        virtual bool submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) override {
 
-            return true;
-        }
+bool NetworkEnvironment::submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) {
 
-    private:
+    return true;
 
-        uint16_t m_threadCount; 
 };
 
 
-EnvironmentPtr EnvironmentFactory::defaultGenerator(const int threadCount) {
-
-    return std::make_shared<NetworkEnvironment>(NetworkEnvironment{threadCount});
-}
-
-GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;

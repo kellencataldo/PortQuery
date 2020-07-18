@@ -17,6 +17,7 @@ add_executable(tests
     ${CMAKE_SOURCE_DIR}/libportquery/source/Parser.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/Statement.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/Environment.cpp
+    ${CMAKE_SOURCE_DIR}/libportquery/source/ThreadPool.cpp
     ${CMAKE_SOURCE_DIR}/libportquery/source/PortQuery.cpp
     TestArgumentParser.cpp
     TestLexer.cpp
