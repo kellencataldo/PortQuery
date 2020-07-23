@@ -1,0 +1,6 @@
+language: cpp
+sudo: required
+dist: bionic
+compiler: gcc
+before_install:
+    .scripts/dependencies.sh
