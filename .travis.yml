@@ -1,6 +1,16 @@
 language: cpp
+
 sudo: required
+
 dist: bionic
+
 compiler: gcc
-before_install:
-    ./scripts/dependencies.sh
+
+before_script:
+    ./scripts/build.sh
+
+script:
+    ./scripts/run.sh
+
+
+
