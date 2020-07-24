@@ -12,11 +12,11 @@ compiler: gcc
 before_script:
     - cd $TRAVIS_BUILD_DIR
     - cmake .
-    - cd test
+    - cd tests
     - make
 
 script:
-    ./scripts/run.sh
+    - ./tests
 
 
 
