@@ -189,7 +189,9 @@ SOSQLExpression Parser::parseBooleanExpression() {
 }
 
 
-bool canCompareOperands(const ColumnToken c, const Token rhs) {
+bool canCompareOperands(const ColumnToken c, const ComparisonToken::OpType op, const Token rhs) {
+
+    UNUSED_PARAMETER(op);
 
     if (c.m_column == ColumnToken::PORT) {
         return std::visit(overloaded {
@@ -205,7 +207,9 @@ bool canCompareOperands(const ColumnToken c, const Token rhs) {
 }
 
 
-bool canCompareOperands(const NumericToken n, const Token rhs) {
+bool canCompareOperands(const NumericToken n, const ComparisonToken::OpType op, const Token rhs) {
+
+    UNUSED_PARAMETER(op);
 
     if (MATCH<ColumnToken>(rhs)) {
 
@@ -216,19 +220,25 @@ bool canCompareOperands(const NumericToken n, const Token rhs) {
 }
 
 
-bool canCompareOperands(const QueryResultToken q, const Token rhs) {
+bool canCompareOperands(const QueryResultToken q, const ComparisonToken::OpType op, const Token rhs) {
 
     if (MATCH<ColumnToken>(rhs)) {
 
+        // all other columns besides port are QUERY RESULT data type
         return ColumnToken::PORT != std::get<ColumnToken>(rhs).m_column;
     }
 
-    return MATCH<QueryResultToken>(rhs);
+    else if (MATCH<QueryResultToken>(rhs) && ComparisonToken::OP_EQ == op) {
+
+        return ComparisonToken::OP_EQ == op || ComparisonToken::OP_NE == op;
+    }
+
+    return false;
 }
 
-bool canCompareOperands(const Token lhs, const Token rhs) {
+bool canCompareOperands(const Token lhs, const ComparisonToken::OpType op, const Token rhs) {
 
-    return std::visit( [=] (auto&&t) { return canCompareOperands(t, rhs); }, lhs);
+    return std::visit( [=] (auto&&t) { return canCompareOperands(t, op, rhs); }, lhs);
 }
 
 
@@ -241,9 +251,10 @@ SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
-    else if (!canCompareOperands(lhs, rhs)) {
+    else if (!canCompareOperands(lhs, comp.m_opType, rhs)) {
 
         std::string exceptionString = "Unable to compare operands: " + getTokenString(lhs) + " " + getTokenString(rhs);
+        exceptionString += ". Operator: " + getTokenString(comp);
         throw std::invalid_argument(exceptionString);
     }
 
@@ -268,9 +279,10 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
-    else if (!canCompareOperands(lhs, rhs)) {
+    else if (!canCompareOperands(lhs, op, rhs)) {
 
-        std::string exceptionString = "Unable to compare operands: " + getTokenString(lhs) + " " + getTokenString(rhs);
+        std::string exceptionString = "Unable to compare operands in IS expression: ";
+        exceptionString += getTokenString(lhs) + " " + getTokenString(rhs);
         throw std::invalid_argument(exceptionString);
     }
 
@@ -289,8 +301,8 @@ SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
     }
 
     const NumericToken lowerBound = std::get<NumericToken>(m_lexer.nextToken());
-    if (!canCompareOperands(lhs, lowerBound)) {
-        std::string exceptionString = "Unable to compare operands in between expression: ";
+    if (!canCompareOperands(lhs, ComparisonToken::OP_GT, lowerBound)) {
+        std::string exceptionString = "Unable to compare operands in BETWEEN expression: ";
         exceptionString += getTokenString(lhs) + " " + getTokenString(lowerBound);
         throw std::invalid_argument(exceptionString);
     }
