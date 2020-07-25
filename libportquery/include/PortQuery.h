@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <any>
+#include <variant>
 
 #include "../source/Parser.h"
 
@@ -12,11 +13,17 @@ class PortQuery {
 
     public:
 
-        static constexpr uint16_t OPEN = 0;
-        static constexpr uint16_t CLOSED = 1;
-        static constexpr uint16_t REJECTED = 2;
+        using PQ_PORT = uint16_t;
+        enum PQ_QUERY_RESULT { 
+            OPEN = 0,
+            CLOSED = 1,
+            REJECTED = 2
+        };
 
-        using PQCallback = std::function<void(std::any, std::vector<uint16_t>)>;
+        using PQ_COLUMN = std::variant<PQ_PORT, PQ_QUERY_RESULT>;
+        using PQ_ROW = std::vector<PQ_COLUMN>;
+        using PQCallback = std::function<void(std::any, PQ_ROW)>;
+
         PortQuery(PQCallback const callback=nullptr, 
                 const std::any context=nullptr, 
                 const int timeout=TIMEOUT_DEFAULT,

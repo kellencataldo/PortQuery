@@ -2,12 +2,6 @@
 
 #include <algorithm>
 
-// helper class for std::visit. Constructs a callable which accepts various types based on deduction
-// template<typename ... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-// template<typename ... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-// template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
-
 
 template <typename Subset, typename Superset> Subset variantSubsetCast(Superset from) {
 
@@ -23,14 +17,59 @@ template <typename Subset, typename Superset> Subset variantSubsetCast(Superset 
 }
 
 
+std::string getExtendedTokenInfo(const NumericToken n) {
+
+    return "[NUMERIC TOKEN: " + std::to_string(n.m_value) + "]";
+}
+
+
+std::string getExtendedTokenInfo(const UserToken u) {
+    
+    return "[USER TOKEN: " + u.m_UserToken + "]";
+}
+
+
+std::string getExtendedTokenInfo(const ComparisonToken c) {
+    std::string prefix{"[COMPARISON TOKEN: "};
+    switch (c.m_opType) {
+        case ComparisonToken::OP_EQ:
+            return prefix + "EQ]";
+        case ComparisonToken::OP_GT:
+            return prefix + "GT]";
+        case ComparisonToken::OP_LT:
+            return prefix + "LT]";
+        case ComparisonToken::OP_GTE:
+            return prefix + "GTE]";
+        case ComparisonToken::OP_LTE:
+            return prefix + "LTE]";
+        case ComparisonToken::OP_NE:
+            return prefix + "NE]";
+        default:
+            return prefix + "UNKNOWN COMPARISON TOKEN]";
+    }
+}
+
+
+std::string getExtendedTokenInfo(const ColumnToken c) {
+    std::string prefix{"[COLUMN TOKEN: "};
+    switch (c.m_column) {
+        case ColumnToken::TCP:
+            return prefix + "TCP]";
+        case ColumnToken::UDP:
+            return prefix + "UDP]";
+        case ColumnToken::PORT:
+            return prefix + "PORT]";
+        default:
+            return prefix + "UNKNOWN COLUMN]";
+    }
+}
+
+
 std::string getTokenString(const Token t) {
 
     return std::visit(overloaded {
-                [=] (NumericToken n)  { return std::to_string(n.m_value); },
-                [=] (ComparisonToken) { return std::string("[COMPARISON TOKEN]"); },
-                [=] (UserToken u)     { return u.m_UserToken; },
                 [=] (ALLToken)        { return std::string("[ALL KEYWORD]"); },
-                [=] (ANDToken)        { return std::string("AND KEYWORD]"); },
+                [=] (ANDToken)        { return std::string("[AND KEYWORD]"); },
                 [=] (ANYToken)        { return std::string("[ANY KEYWORD]"); },
                 [=] (BETWEENToken)    { return std::string("[BETWEEN KEYWORD]"); },
                 [=] (COUNTToken)      { return std::string("[COUNT KEYWORD]"); },
@@ -44,13 +83,16 @@ std::string getTokenString(const Token t) {
                 [=] (ORDERToken)      { return std::string("[ORDER KEYWORD]"); },
                 [=] (SELECTToken)     { return std::string("[SELECT KEYWORD]");},
                 [=] (WHEREToken)      { return std::string("[WHERE KEYWORD]"); },
-                [=] (ColumnToken)   { return std::string("[PROTOCOL TOKEN]"); }, // more granularity please
                 [=] (EOFToken)        { return std::string("[END OF INPUT]"); },
                 [=] (PunctuationToken<'*'>) { return std::string("[ * ]"); },
                 [=] (PunctuationToken<'('>) { return std::string("[ ( ]"); }, 
                 [=] (PunctuationToken<')'>) { return std::string("[ ) ]"); },
                 [=] (PunctuationToken<';'>) { return std::string("[ ; ]"); }, 
                 [=] (PunctuationToken<','>) { return std::string("[ , ]"); },
+                [=] (NumericToken n)    { return getExtendedTokenInfo(n); },
+                [=] (UserToken u)       { return getExtendedTokenInfo(u); },
+                [=] (ComparisonToken c) { return getExtendedTokenInfo(c); },
+                [=] (ColumnToken c)     { return getExtendedTokenInfo(c); },
                 [=] (auto) -> std::string { return std::string("[UNKNOWN TOKEN]"); } }, 
             t);
     }
@@ -98,7 +140,6 @@ SOSQLExpression Parser::parseORExpression() {
         expression = std::make_unique<ORExpression>(ORExpression{std::move(expression), std::move(right)});
     }
 
-
     return expression;
 }
 
@@ -112,7 +153,6 @@ SOSQLExpression Parser::parseANDExpression() {
         SOSQLExpression right = parseBooleanFactor();
         expression = std::make_unique<ANDExpression>(ANDExpression{std::move(expression), std::move(right)});
     }
-
 
     return expression;
 }
@@ -149,6 +189,49 @@ SOSQLExpression Parser::parseBooleanExpression() {
 }
 
 
+bool canCompareOperands(const ColumnToken c, const Token rhs) {
+
+    if (c.m_column == ColumnToken::PORT) {
+        return std::visit(overloaded {
+            [=] (const ColumnToken c) {      return c.m_column == ColumnToken::PORT; },
+            [=] (const NumericToken n) {     return true; },
+            [=] (const QueryResultToken q) { return false; },
+            [=] (auto t) {                   return false; } },
+        rhs);
+    }
+
+    // otherwise all other columns besides PORT are of the QUERY RESULT data type
+    return MATCH<QueryResultToken>(rhs);
+}
+
+
+bool canCompareOperands(const NumericToken n, const Token rhs) {
+
+    if (MATCH<ColumnToken>(rhs)) {
+
+        return ColumnToken::PORT == std::get<ColumnToken>(rhs).m_column;
+    }
+
+    return MATCH<NumericToken>(rhs);
+}
+
+
+bool canCompareOperands(const QueryResultToken q, const Token rhs) {
+
+    if (MATCH<ColumnToken>(rhs)) {
+
+        return ColumnToken::PORT != std::get<ColumnToken>(rhs).m_column;
+    }
+
+    return MATCH<QueryResultToken>(rhs);
+}
+
+bool canCompareOperands(const Token lhs, const Token rhs) {
+
+    return std::visit( [=] (auto&&t) { return canCompareOperands(t, rhs); }, lhs);
+}
+
+
 SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
 
     const ComparisonToken comp = std::get<ComparisonToken>(m_lexer.nextToken());
@@ -156,6 +239,12 @@ SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
     if (!MATCH<ColumnToken, QueryResultToken, NumericToken>(rhs)) {
 
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
+    }
+
+    else if (!canCompareOperands(lhs, rhs)) {
+
+        std::string exceptionString = "Unable to compare operands: " + getTokenString(lhs) + " " + getTokenString(rhs);
+        throw std::invalid_argument(exceptionString);
     }
 
     Terminal LHSTerminal = variantSubsetCast<Terminal, Token>(lhs);
@@ -179,6 +268,12 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
         throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
     }
 
+    else if (!canCompareOperands(lhs, rhs)) {
+
+        std::string exceptionString = "Unable to compare operands: " + getTokenString(lhs) + " " + getTokenString(rhs);
+        throw std::invalid_argument(exceptionString);
+    }
+
     Terminal LHSTerminal = variantSubsetCast<Terminal, Token>(lhs);
     Terminal RHSTerminal = variantSubsetCast<Terminal, Token>(rhs);
 
@@ -187,13 +282,19 @@ SOSQLExpression Parser::parseISExpression(const Token lhs) {
 
 
 SOSQLExpression Parser::parseBETWEENExpression(const Token lhs) {
-
+    
     m_lexer.nextToken();
     if (!MATCH<NumericToken>(m_lexer.peek())) {
         throw std::invalid_argument("Only numeric tokens can be specified in the BETWEEN clause");
     }
 
     const NumericToken lowerBound = std::get<NumericToken>(m_lexer.nextToken());
+    if (!canCompareOperands(lhs, lowerBound)) {
+        std::string exceptionString = "Unable to compare operands in between expression: ";
+        exceptionString += getTokenString(lhs) + " " + getTokenString(lowerBound);
+        throw std::invalid_argument(exceptionString);
+    }
+
     if (!MATCH<ANDToken>(m_lexer.nextToken())) {
         throw std::invalid_argument("AND keyword missing from BETWEEN clause");
     }
@@ -222,7 +323,6 @@ SelectSet Parser::parseSelectSetQuantifier() {
                 throw std::invalid_argument(exceptionString); 
             } },
         m_lexer.peek());
-
 };
 
 std::vector<ColumnToken::Column> Parser::parseSelectList() {
@@ -240,7 +340,6 @@ std::vector<ColumnToken::Column> Parser::parseSelectList() {
                     m_lexer.nextToken();
                     moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
                 },
-
                 [&] (PunctuationToken<','>) {
                     m_lexer.nextToken();
                 },
