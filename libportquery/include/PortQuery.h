@@ -1,72 +1,89 @@
-
 #pragma once
 
 #include <string>
 #include <functional>
 #include <any>
 #include <variant>
+#include <memory>
 
-#include "../source/Parser.h"
 
+namespace PortQuery {
 
-class PortQuery {
+    class SelectStatement;
 
-    public:
-
-        using PQ_PORT = uint16_t;
-        enum PQ_QUERY_RESULT { 
+    using PQ_PORT = uint16_t;
+    enum PQ_QUERY_RESULT { 
             OPEN = 0,
             CLOSED = 1,
             REJECTED = 2
         };
 
-        using PQ_COLUMN = std::variant<PQ_PORT, PQ_QUERY_RESULT>;
-        using PQ_ROW = std::vector<PQ_COLUMN>;
-        using PQCallback = std::function<void(std::any, PQ_ROW)>;
-
-        PortQuery(PQCallback const callback=nullptr, 
-                const std::any context=nullptr, 
-                const int timeout=TIMEOUT_DEFAULT,
-                const int threadCount=THREADCOUNT_DEFAULT) : 
-            m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount),
-            m_selectStatement(nullptr) { }
-
-        bool prepare(std::string queryString);
-        bool run();
-        bool finalize();
-        bool execute(std::string queryString);
+    using PQ_COLUMN = std::variant<PQ_PORT, PQ_QUERY_RESULT>;
+    using PQ_ROW = std::vector<PQ_COLUMN>;
+    using PQCallback = std::function<void(std::any, PQ_ROW)>;
 
 
-        void setUserCallback(const PQCallback userCallback) {
+    class PQConn {
 
-            m_userCallback = userCallback;
-        }
+        public:
 
-        void setUserData(const std::any userContext) {
+            using PQ_PORT = uint16_t;
+            enum PQ_QUERY_RESULT { 
+                OPEN = 0,
+                CLOSED = 1,
+                REJECTED = 2
+            };
 
-            m_userContext = userContext;
-        }
+            using PQ_COLUMN = std::variant<PQ_PORT, PQ_QUERY_RESULT>;
+            using PQ_ROW = std::vector<PQ_COLUMN>;
+            using PQCallback = std::function<void(std::any, PQ_ROW)>;
 
-        void setTimeout(const int timeout) {
+            PQConn(PQCallback const callback=nullptr, 
+                    const std::any context=nullptr, 
+                    const int timeout=TIMEOUT_DEFAULT,
+                    const int threadCount=THREADCOUNT_DEFAULT) : 
+                m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount),
+                m_selectStatement(nullptr) { }
 
-            m_timeout = timeout;
-        }
+            bool prepare(std::string queryString);
+            bool run();
+            bool finalize();
+            bool execute(std::string queryString);
 
-        std::string getErrorString() const {
 
-            return m_errorString;
-        }
+            void setUserCallback(const PQCallback userCallback) {
 
-    private:
+                m_userCallback = userCallback;
+            }
 
-        static constexpr int TIMEOUT_DEFAULT = 2;
-        int m_timeout;
-        static constexpr int THREADCOUNT_DEFAULT = 0;
-        int m_threadCount;
+            void setUserData(const std::any userContext) {
 
-        PQCallback m_userCallback;
-        std::any m_userContext;
+                m_userContext = userContext;
+            }
 
-        SOSQLSelectStatement m_selectStatement;
-        std::string m_errorString;
-};
+            void setTimeout(const int timeout) {
+
+                m_timeout = timeout;
+            }
+
+            std::string getErrorString() const {
+
+                return m_errorString;
+            }
+
+        private:
+
+            static constexpr int TIMEOUT_DEFAULT = 2;
+            int m_timeout;
+            static constexpr int THREADCOUNT_DEFAULT = 0;
+            int m_threadCount;
+
+            PQCallback m_userCallback;
+            std::any m_userContext;
+
+
+            using SOSQLSelectStatement = std::unique_ptr<SelectStatement>;
+            SOSQLSelectStatement m_selectStatement;
+            std::string m_errorString;
+    };
+}

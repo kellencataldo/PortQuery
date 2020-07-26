@@ -4,38 +4,38 @@
 #include <memory>
 #include <tuple>
 
-#include "Lexer.h"
-#include "Network.h"
 #include "Statement.h"
 
 
 #define UNUSED_PARAMETER(x) (void) (x)
 
+namespace PortQuery {
 
-class Parser { 
+    class Parser { 
 
-    public:
-        Parser(const std::string& queryString) : m_lexer(queryString) { }
+        public:
+            Parser(const std::string& queryString) : m_lexer(queryString) { }
 
-        SOSQLSelectStatement parseSOSQLStatement();
+            SOSQLSelectStatement parseSOSQLStatement();
 
 
-    private:
+        private:
 
-        SelectSet parseSelectSetQuantifier();
-        SelectSet parseSelectList();
+            SelectSet parseSelectSetQuantifier();
+            SelectSet parseSelectList();
 
-        std::string parseTableReference();
+            std::string parseTableReference();
 
-        SOSQLExpression parseTableExpression();
-        SOSQLExpression parseORExpression();
-        SOSQLExpression parseANDExpression();
-        SOSQLExpression parseBooleanFactor();
-        SOSQLExpression parseBooleanExpression();
+            SOSQLExpression parseTableExpression();
+            SOSQLExpression parseORExpression();
+            SOSQLExpression parseANDExpression();
+            SOSQLExpression parseBooleanFactor();
+            SOSQLExpression parseBooleanExpression();
 
-        SOSQLExpression parseComparisonExpression(const Token lhs);
-        SOSQLExpression parseISExpression(const Token lhs);
-        SOSQLExpression parseBETWEENExpression(const Token lhs);
+            SOSQLExpression parseComparisonExpression(const Token lhs);
+            SOSQLExpression parseISExpression(const Token lhs);
+            SOSQLExpression parseBETWEENExpression(const Token lhs);
 
-        Lexer m_lexer;
-};
+            Lexer m_lexer;
+    };
+}

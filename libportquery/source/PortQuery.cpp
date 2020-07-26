@@ -6,69 +6,70 @@
 #include "Environment.h"
 
 
-bool PortQuery::prepare(std::string queryString) {
+namespace PortQuery { 
 
-    if (m_selectStatement) {
+    bool PQConn::prepare(std::string queryString) {
 
-        // maybe just finalize automatically here?
-        m_errorString = "Previous query has not been finalized";
-        return false;
-    }
+        if (m_selectStatement) {
 
-    Parser parseEngine{queryString};
-    try {
-
-        m_selectStatement = parseEngine.parseSOSQLStatement();
-    } 
-    catch (std::invalid_argument& e) {
-
-        m_errorString = e.what();
-        return false;
-    }
-
-    m_errorString.clear();
-    return true;
-}
-
-
-bool PortQuery::run() {
-
-    static constexpr uint32_t MAX_PORT = static_cast<uint16_t>(-1);
-    const NetworkProtocols requiredProtocols = m_selectStatement->collectRequiredProtocols();
-
-    EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
-    for (uint32_t port = 0; port <= MAX_PORT; port++) {
-
-        if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(port)) {
-
-            env->submitPortForScan(static_cast<uint16_t>(port), requiredProtocols);
+            // maybe just finalize automatically here?
+            m_errorString = "Previous query has not been finalized";
+            return false;
         }
-    }
 
-    return true;
-}
+        Parser parseEngine{queryString};
+        try {
 
+            m_selectStatement = std::move(parseEngine.parseSOSQLStatement());
+        } 
+        catch (std::invalid_argument& e) {
 
-bool PortQuery::finalize() {
+            m_errorString = e.what();
+            return false;
+        }
 
-    m_errorString.clear();
-    if (m_selectStatement) {
-
-        m_selectStatement.reset();
         m_errorString.clear();
         return true;
     }
 
-    return false;
-}
 
-bool PortQuery::execute(std::string queryString) { 
-    if (prepare(queryString) && run() && finalize()) {
+    bool PQConn::run() {
+
+        static constexpr uint32_t MAX_PORT = static_cast<uint16_t>(-1);
+        const NetworkProtocols requiredProtocols = m_selectStatement->collectRequiredProtocols();
+
+        EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
+        for (uint32_t port = 0; port <= MAX_PORT; port++) {
+
+            if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(port)) {
+
+                env->submitPortForScan(static_cast<uint16_t>(port), requiredProtocols);
+            }
+        }
 
         return true;
     }
 
-    return false;
+
+    bool PQConn::finalize() {
+
+        m_errorString.clear();
+        if (m_selectStatement) {
+
+            m_selectStatement.reset();
+            m_errorString.clear();
+            return true;
+        }
+
+        return false;
+    }
+
+    bool PQConn::execute(std::string queryString) { 
+        if (prepare(queryString) && run() && finalize()) {
+
+            return true;
+        }
+
+        return false;
+    }
 }
-
-
