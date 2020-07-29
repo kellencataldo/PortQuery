@@ -1,13 +1,16 @@
 #include "Environment.h"
 
+namespace PortQuery {
 
-GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;
+    GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;
 
 
-bool NetworkEnvironment::submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) {
+    bool NetworkEnvironment::submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) {
 
-    return true;
+        return true;
 
-};
+    };
+
+}
 
 

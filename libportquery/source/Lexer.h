@@ -164,6 +164,11 @@ namespace PortQuery {
 
     template<typename ... Ts> bool MATCH(const Token t) { return (std::holds_alternative<Ts>(t) || ...); }
 
+    inline bool MATCH_TERMINAL(const Token t) {
+
+        return MATCH<NumericToken, OPENToken, CLOSEDToken, REJECTEDToken, PORTToken, TCPToken, UDPToken>(t);
+    }
+
 
     class Lexer { 
         public:

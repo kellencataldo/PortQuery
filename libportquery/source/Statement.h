@@ -27,7 +27,7 @@ namespace PortQuery {
 
         virtual Tristate attemptPreNetworkEval(const uint16_t port) const = 0;
         virtual NetworkProtocols collectRequiredProtocols(void) const = 0;
-        virtual ~IExpression() { }
+        virtual ~IExpression() = default;
     };
 
     using SOSQLExpression = std::unique_ptr<IExpression>;
@@ -87,37 +87,47 @@ namespace PortQuery {
     };
 
 
-    using Terminal = std::variant<PORTToken, TCPToken, UDPToken, OPENToken, CLOSEDToken, REJECTEDToken, NumericToken>;
-
     struct BETWEENExpression : IExpression {
 
-        BETWEENExpression(const Terminal terminal, const uint16_t lowerBound, const uint16_t upperBound) :
-            m_terminal(terminal), m_lowerBound(lowerBound), m_upperBound(upperBound) { }
+        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token terminal) :
+            m_lowerBound(lowerBound), m_upperBound(upperBound) { }
 
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
-        virtual NetworkProtocols collectRequiredProtocols(void) const override;
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
+
+
+            return Tristate::TRUE_STATE;
+        }
+ 
+        virtual NetworkProtocols collectRequiredProtocols(void) const override {
+
+             return NetworkProtocols::NONE;
+        }
+
         static bool Evaluate(const uint16_t value, const uint16_t lowerBound, const uint16_t upperBound) {
 
             return lowerBound <= value && value <= upperBound;
         }
 
-        Terminal m_terminal;
         uint16_t m_lowerBound;
         uint16_t m_upperBound;
     };
 
     struct ComparisonExpression : IExpression {
 
-        ComparisonExpression(const ComparisonToken::OpType op, const Terminal lhs, const Terminal rhs) :
-           m_op(op), m_LHSTerminal(lhs), m_RHSTerminal(rhs) { }
+        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op)  { }
 
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
-        virtual NetworkProtocols collectRequiredProtocols(void) const override;
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
+
+            return Tristate::TRUE_STATE;
+        }
+
+        virtual NetworkProtocols collectRequiredProtocols(void) const override {
+            return NetworkProtocols::NONE;
+        }
+
         static bool Evaluate(ComparisonToken::OpType, const uint16_t lhs, const uint16_t rhs);
 
         ComparisonToken::OpType m_op;
-        Terminal m_LHSTerminal;
-        Terminal m_RHSTerminal;
     };
 
     struct NULLExpression : IExpression {
@@ -145,7 +155,12 @@ namespace PortQuery {
                 m_tableExpression(std::move(tableExpression)) { }
 
 
-            virtual NetworkProtocols collectRequiredProtocols(void) const override;
+            virtual NetworkProtocols collectRequiredProtocols(void) const override {
+
+                return NetworkProtocols::NONE;
+
+            }
+        
             virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
 
                 return m_tableExpression->attemptPreNetworkEval(port);
@@ -155,6 +170,11 @@ namespace PortQuery {
 
                 return m_selectedSet;
             }
+
+            virtual ~SelectStatement() = default;
+            SelectStatement(SelectStatement&&) = default;
+            SelectStatement &operator=(SelectStatement&&) = default;
+
 
         private:
 

@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "Statement.h"
 #include "PortQuery.h"
 #include "Parser.h"
 #include "Network.h"
@@ -72,4 +73,11 @@ namespace PortQuery {
 
         return false;
     }
+
+    PQConn::PQConn(PQCallback const callback, const std::any context, const int timeout, const int threadCount) : 
+        m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount) { }
+
+    PQConn::~PQConn() = default;
+    PQConn::PQConn(PQConn&&) = default;
+    PQConn& PQConn::operator=(PQConn&&) = default;
 }

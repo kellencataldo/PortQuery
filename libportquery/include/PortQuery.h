@@ -9,7 +9,6 @@
 
 namespace PortQuery {
 
-    class SelectStatement;
 
     using PQ_PORT = uint16_t;
     enum PQ_QUERY_RESULT { 
@@ -22,6 +21,8 @@ namespace PortQuery {
     using PQ_ROW = std::vector<PQ_COLUMN>;
     using PQCallback = std::function<void(std::any, PQ_ROW)>;
 
+
+    class SelectStatement;
 
     class PQConn {
 
@@ -41,9 +42,11 @@ namespace PortQuery {
             PQConn(PQCallback const callback=nullptr, 
                     const std::any context=nullptr, 
                     const int timeout=TIMEOUT_DEFAULT,
-                    const int threadCount=THREADCOUNT_DEFAULT) : 
-                m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount),
-                m_selectStatement(nullptr) { }
+                    const int threadCount=THREADCOUNT_DEFAULT);
+
+            ~PQConn();
+            PQConn(PQConn&&);
+            PQConn &operator=(PQConn&&);
 
             bool prepare(std::string queryString);
             bool run();

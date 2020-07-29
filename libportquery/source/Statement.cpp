@@ -18,7 +18,7 @@ namespace PortQuery {
         return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
     }
 
-
+/*
     std::tuple<bool, uint16_t> getPreNetworkValue(const Terminal terminal, const uint16_t port) {
 
         auto t = std::visit(overloaded {
@@ -130,5 +130,6 @@ namespace PortQuery {
         requestedProtocols |= m_tableExpression->collectRequiredProtocols();
         return requestedProtocols;
     }
+    */
 
 }

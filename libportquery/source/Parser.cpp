@@ -5,20 +5,6 @@
 
 namespace PortQuery {
 
-    template <typename Subset, typename Superset> Subset variantSubsetCast(Superset from) {
-
-        return std::visit([] (auto&& elem) -> Subset {
-                using Subtype = std::decay_t<decltype(elem)>;
-                if constexpr (std::is_constructible_v<Subset, Subtype>) {
-                    return Subset(std::forward<decltype(elem)>(elem));
-                }
-                else {
-                    throw std::invalid_argument("Unable to convert variant to subset");
-                }
-            }, std::forward<Superset>(from));
-    }
-
-
     std::string getExtendedTokenInfo(const NumericToken n) {
 
         return "[NUMERIC TOKEN: " + std::to_string(n.m_value) + "]";
@@ -105,7 +91,7 @@ namespace PortQuery {
 
         // parse end here, check for EOF and semicolon
         // parse where statement here.
-        return std::make_unique<SelectStatement>(SelectStatement{selectedSet, tableReference, std::move(tableExpression)});
+        return std::move(std::make_unique<SelectStatement>(SelectStatement{selectedSet, tableReference, std::move(tableExpression)}));
     }
 
 
@@ -164,7 +150,7 @@ namespace PortQuery {
     SOSQLExpression Parser::parseBooleanExpression() {
 
         const Token lhs = m_lexer.nextToken();
-        if (!MATCH<PORTToken, TCPToken, UDPToken, OPENToken, CLOSEDToken, REJECTEDToken, NumericToken>(lhs)) {
+        if (!MATCH_TERMINAL(lhs)) {
 
             throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(lhs));
         }
@@ -200,7 +186,7 @@ namespace PortQuery {
                 [=] (REJECTEDToken) { return canCompareProtocolOperands(op, rhs); },
                 [=] (TCPToken)      { return canCompareProtocolOperands(op, rhs); },
                 [=] (UDPToken)      { return canCompareProtocolOperands(op, rhs); },
-                [=] (auto const t) -> SOSQLExpression {
+                [=] (auto const t) -> bool {
                     const std::string exceptionString = "Invalid operator token in expression: " + getTokenString(t);
                     throw std::invalid_argument(exceptionString); 
                 } },
@@ -212,7 +198,7 @@ namespace PortQuery {
 
         const ComparisonToken comp = std::get<ComparisonToken>(m_lexer.nextToken());
         const Token rhs = m_lexer.nextToken();
-        if (!MATCH<ColumnToken, QueryResultToken, NumericToken>(rhs)) {
+        if (!MATCH_TERMINAL(rhs)) {
 
             throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
         }
@@ -224,10 +210,7 @@ namespace PortQuery {
             throw std::invalid_argument(exceptionString);
         }
 
-        Terminal LHSTerminal = variantSubsetCast<Terminal, Token>(lhs);
-        Terminal RHSTerminal = variantSubsetCast<Terminal, Token>(rhs);
-
-        return std::make_unique<ComparisonExpression>(ComparisonExpression{comp.m_opType, LHSTerminal, RHSTerminal});
+        return std::make_unique<ComparisonExpression>(ComparisonExpression{comp.m_opType, lhs, rhs});
     }
 
 
@@ -240,7 +223,7 @@ namespace PortQuery {
             rhs = m_lexer.nextToken();
         }
 
-        if (!MATCH<ColumnToken, QueryResultToken, NumericToken>(rhs)) {
+        if (!MATCH_TERMINAL(rhs)) {
 
             throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
         }
@@ -252,10 +235,7 @@ namespace PortQuery {
             throw std::invalid_argument(exceptionString);
         }
 
-        Terminal LHSTerminal = variantSubsetCast<Terminal, Token>(lhs);
-        Terminal RHSTerminal = variantSubsetCast<Terminal, Token>(rhs);
-
-        return std::make_unique<ComparisonExpression>(ComparisonExpression{op, LHSTerminal, RHSTerminal});
+        return std::make_unique<ComparisonExpression>(ComparisonExpression{op, lhs, rhs});
     }
 
 
@@ -282,19 +262,19 @@ namespace PortQuery {
         }
 
         const NumericToken upperBound = std::get<NumericToken>(m_lexer.nextToken());
-        Terminal terminal = variantSubsetCast<Terminal, Token>(lhs);
-        return std::make_unique<BETWEENExpression>(BETWEENExpression{terminal, lowerBound.m_value, upperBound.m_value});
+        return std::make_unique<BETWEENExpression>(BETWEENExpression{lowerBound.m_value, upperBound.m_value, lhs});
     }
 
     SelectSet Parser::parseSelectSetQuantifier() {
 
         return std::visit(overloaded {
-                [=] (ColumnToken) { 
-                    return parseSelectList(); 
-                },
+                [=] (PORTToken) { return parseSelectList(); },
+                [=] (TCPToken)  { return parseSelectList(); },
+                [=] (UDPToken)  { return parseSelectList(); },
+
                 [=] (PunctuationToken<'*'>) -> SelectSet { 
                     m_lexer.nextToken(); 
-                    return { ColumnToken::PORT, ColumnToken::TCP, ColumnToken::UDP }; 
+                    return { PORTToken{ }, TCPToken{ }, UDPToken{ } }; 
                 },
                 [=] (auto t) -> SelectSet {
                     const std::string exceptionString = "Invalid token in select list: " + getTokenString(t);
@@ -303,30 +283,42 @@ namespace PortQuery {
             m_lexer.peek());
     };
 
-    std::vector<ColumnToken::Column> Parser::parseSelectList() {
 
+    SelectSet Parser::parseSelectList() {
+
+        // FIND A BETTER REPRESENTATION FOR THIS!
         SelectSet selectedSet = { };
         for (bool moreColumns = true; moreColumns;) {
-            std::visit(overloaded { 
-                    [&] (ColumnToken c) { 
-                        if (selectedSet.end() != std::find(selectedSet.begin(), selectedSet.end(), c.m_column)) {
-                            std::string exceptionString = "Invalid token specified in select list: " + getTokenString(c);
-                            throw std::invalid_argument(exceptionString);
-                        }
 
-                        selectedSet.push_back(c.m_column);
-                        m_lexer.nextToken();
-                        moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
-                    },
-                    [&] (PunctuationToken<','>) {
-                        m_lexer.nextToken();
-                    },
-                    [=] (const auto t) -> void { 
-                        std::string exceptionString = "Invalid token specified in select list: " + getTokenString(t);
-                        throw std::invalid_argument(exceptionString);
-                    } },
-               
-                m_lexer.peek());
+            std::visit( overloaded {
+                [&] (PORTToken) { 
+                    selectedSet.push_back(PORTToken{});
+                    m_lexer.nextToken();
+                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
+                },
+ 
+                [&] (TCPToken) { 
+                    selectedSet.push_back(TCPToken{});
+                    m_lexer.nextToken();
+                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
+                },
+ 
+                [&] (UDPToken) { 
+                    selectedSet.push_back(UDPToken{});
+                    m_lexer.nextToken();
+                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
+                },
+
+                [&] (PunctuationToken<','>) {
+                    m_lexer.nextToken();
+                },
+
+                [=] (auto t) -> void {
+                    std::string exceptionString = "Invalid token specified in select list: " + getTokenString(t);
+                    throw std::invalid_argument(exceptionString);
+                } }, 
+
+            m_lexer.peek());
         }
 
         return selectedSet;
@@ -340,7 +332,6 @@ namespace PortQuery {
             const std::string exceptionString = "FROM token not following column list, invalid token specified: " + getTokenString(t);
             throw std::invalid_argument(exceptionString);
         }
-
         return std::visit(overloaded {
                 [=] (UserToken u)  { return u.m_UserToken; },
                 [=] (auto t) -> std::string { 
