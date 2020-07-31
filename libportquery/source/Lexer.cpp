@@ -11,27 +11,23 @@ namespace PortQuery {
     Token getKeywordTokenFromString(const std::string lexeme) {
 
         static const std::map<std::string, Token> keywordMap { 
-            {"ALL",     ALLToken{ }},
-            {"AND",     ANDToken{ }},
-            {"ANY",     ANYToken{ }},
-            {"BETWEEN", BETWEENToken{ }},
-            {"COUNT",   COUNTToken{ }},
-            {"FROM",    FROMToken{ }},
-            {"IF",      IFToken{ }},
-            {"IN",      INToken{ }},
-            {"IS",      ISToken{ }},
-            {"LIMIT",   LIMITToken{ }},
-            {"NOT",     NOTToken{ }},
-            {"OR",      ORToken{ }},
-            {"ORDER",   ORDERToken{ }},
-            {"SELECT",  SELECTToken{ }},
-            {"WHERE",   WHEREToken{ }},
-            {"OPEN",    OPENToken{ }},
-            {"CLOSED",  CLOSEDToken { }},
-            {"REJECTED", REJECTEDToken { }},
-            {"PORT",    PORTToken{ }},
-            {"TCP",     TCPToken{ }},
-            {"UDP",     UDPToken{ }},
+            {"ALL",      KeywordToken{ KeywordToken::ALL }},
+            {"AND",      KeywordToken{ KeywordToken::AND }},
+            {"BETWEEN",  KeywordToken{ KeywordToken::BETWEEN }},
+            {"FROM",     KeywordToken{ KeywordToken::FROM }},
+            {"IS",       KeywordToken{ KeywordToken::IS }},
+            {"NOT",      KeywordToken{ KeywordToken::NOT }},
+            {"OR",       KeywordToken{ KeywordToken::OR }},
+            {"SELECT",   KeywordToken{ KeywordToken::SELECT }},
+            {"WHERE",    KeywordToken{ KeywordToken::WHERE }},
+
+            // Not technically tokens but the logic is the same
+            {"OPEN",     QueryResultToken{ QueryResultToken::OPEN }},
+            {"CLOSED",   QueryResultToken{ QueryResultToken::CLOSED }},
+            {"REJECTED", QueryResultToken{ QueryResultToken::REJECTED }},
+            {"PORT",     ColumnToken{ ColumnToken::PORT }},
+            {"TCP",      ColumnToken{ ColumnToken::TCP }},
+            {"UDP",      ColumnToken{ ColumnToken::UDP }},
         };
 
         auto keywordMapIter = keywordMap.find(lexeme);

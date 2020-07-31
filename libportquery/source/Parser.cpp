@@ -21,56 +21,104 @@ namespace PortQuery {
         std::string prefix{"[COMPARISON TOKEN: "};
         switch (c.m_opType) {
             case ComparisonToken::OP_EQ:
-                return prefix + "EQ]";
+                prefix += "EQ]";
             case ComparisonToken::OP_GT:
-                return prefix + "GT]";
+                prefix += "GT]";
             case ComparisonToken::OP_LT:
-                return prefix + "LT]";
+                prefix += "LT]";
             case ComparisonToken::OP_GTE:
-                return prefix + "GTE]";
+                prefix += "GTE]";
             case ComparisonToken::OP_LTE:
-                return prefix + "LTE]";
+                prefix += "LTE]";
             case ComparisonToken::OP_NE:
-                return prefix + "NE]";
+                prefix += "NE]";
             default:
-                return prefix + "UNKNOWN COMPARISON TOKEN]";
+                prefix += "UNKNOWN COMPARISON TOKEN]";
         }
+
+        return prefix + "]";
+    }
+
+    std::string getExtendedTokenInfo(const KeywordToken k) {
+
+        std::string prefix{"[KEYWORD TOKEN: "};
+        switch (k.m_keyword) {
+            case KeywordToken::ALL:
+                prefix += "ALL";
+            case KeywordToken::AND:
+                prefix += "AND";
+            case KeywordToken::BETWEEN: 
+                prefix += "BETWEEN";
+            case KeywordToken::FROM:
+                prefix += "FROM";
+            case KeywordToken::IS:
+                prefix += "IS";
+            case KeywordToken::NOT:
+                prefix += "NOT";
+            case KeywordToken::OR:
+                prefix += "OR";
+            case KeywordToken::SELECT:
+                prefix += "SELECT";
+            case KeywordToken::WHERE:
+                prefix += "WHERE";
+            default:
+                prefix += "UNKNOWN KEYWORD TOKEN";
+        }
+
+        return prefix + "]";
+    }
+
+    std::string getExtendedTokenInfo(const ColumnToken c) {
+
+        std::string prefix{"[COLUMN TOKEN: "};
+        switch (c.m_column) {
+            case ColumnToken::PORT:
+                prefix += "PORT";
+            case ColumnToken::TCP:
+                prefix += "TCP";
+            case ColumnToken::UDP:
+                prefix += "UDP";
+            default:
+                prefix += "UNKNOWN COLUMN TOKEN";
+            }
+
+        return prefix + "]";
+    }
+
+
+    std::string getExtendedTokenInfo(const QueryResultToken q) {
+        
+        std::string prefix{"PROTOCOL TOKEN: "};
+        switch (q.m_queryResult) {
+            case QueryResultToken::OPEN:
+                prefix += "OPEN";
+            case QueryResultToken::CLOSED:
+                prefix += "CLOSED";
+            case QueryResultToken::REJECTED:
+                prefix += "REJECTED";
+            default:
+                prefix += "UNKOWN QUERY RESULT TOKEN";
+        }
+
+        return prefix + "]";
     }
 
 
     std::string getTokenString(const Token t) {
 
         return std::visit(overloaded {
-                    [=] (ALLToken)        { return std::string("[ALL KEYWORD]"); },
-                    [=] (ANDToken)        { return std::string("[AND KEYWORD]"); },
-                    [=] (ANYToken)        { return std::string("[ANY KEYWORD]"); },
-                    [=] (BETWEENToken)    { return std::string("[BETWEEN KEYWORD]"); },
-                    [=] (COUNTToken)      { return std::string("[COUNT KEYWORD]"); },
-                    [=] (FROMToken)       { return std::string("[FROM KEYWORD]"); },
-                    [=] (IFToken)         { return std::string("[IF KEYWORD]"); },
-                    [=] (INToken)         { return std::string("[IN KEYWORD]"); },
-                    [=] (ISToken)         { return std::string("[IS KEYWORD]"); },
-                    [=] (LIMITToken)      { return std::string("[LIMIT KEYWORD]"); },
-                    [=] (NOTToken)        { return std::string("[NOT KEYWORD]"); },
-                    [=] (ORToken)         { return std::string("[OR KEYWORD]"); },
-                    [=] (ORDERToken)      { return std::string("[ORDER KEYWORD]"); },
-                    [=] (SELECTToken)     { return std::string("[SELECT KEYWORD]");},
-                    [=] (WHEREToken)      { return std::string("[WHERE KEYWORD]"); },
-                    [=] (EOFToken)        { return std::string("[END OF INPUT]"); },
-                    [=] (OPENToken)       { return std::string("[OPEN]"); },
-                    [=] (CLOSEDToken)     { return std::string("[CLOSED]"); },
-                    [=] (REJECTEDToken)   { return std::string("[REJECTED]"); },
-                    [=] (PORTToken)       { return std::string("[PORT]"); },
-                    [=] (TCPToken)        { return std::string("[TCPToken]"); },
-                    [=] (UDPToken)        { return std::string("[UDPToken]"); },
+                    [=] (const KeywordToken k)     { return getExtendedTokenInfo(k); },
+                    [=] (const ColumnToken c)      { return getExtendedTokenInfo(c); },
+                    [=] (const QueryResultToken q) { return getExtendedTokenInfo(q); },
+                    [=] (const NumericToken n)     { return getExtendedTokenInfo(n); },
+                    [=] (const UserToken u)        { return getExtendedTokenInfo(u); },
+                    [=] (const ComparisonToken c)  { return getExtendedTokenInfo(c); },
                     [=] (PunctuationToken<'*'>) { return std::string("[ * ]"); },
                     [=] (PunctuationToken<'('>) { return std::string("[ ( ]"); }, 
                     [=] (PunctuationToken<')'>) { return std::string("[ ) ]"); },
                     [=] (PunctuationToken<';'>) { return std::string("[ ; ]"); }, 
                     [=] (PunctuationToken<','>) { return std::string("[ , ]"); },
-                    [=] (NumericToken n)    { return getExtendedTokenInfo(n); },
-                    [=] (UserToken u)       { return getExtendedTokenInfo(u); },
-                    [=] (ComparisonToken c) { return getExtendedTokenInfo(c); },
+                    [=] (EOFToken)        { return std::string("[END OF INPUT]"); },
                     [=] (auto) -> std::string { return std::string("[UNKNOWN TOKEN]"); } }, 
                 t);
         }
@@ -79,7 +127,7 @@ namespace PortQuery {
     SOSQLSelectStatement Parser::parseSOSQLStatement() {
 
         // SOSQL statements can obviously only begin with the "SELECT" keyword
-        if (!MATCH<SELECTToken>(m_lexer.nextToken())) {
+        if (!MATCH_KEYWORD<KeywordToken::SELECT>(m_lexer.nextToken())) {
 
             throw std::invalid_argument("Only SELECT statements are handled. Statement must begin with SELECT");
         }
@@ -98,7 +146,7 @@ namespace PortQuery {
     SOSQLExpression Parser::parseTableExpression() {
 
 
-        if (!MATCH<WHEREToken>(m_lexer.peek())) {
+        if (!MATCH_KEYWORD<KeywordToken::WHERE>(m_lexer.peek())) {
 
             return std::make_unique<NULLExpression>();
         }
@@ -111,7 +159,7 @@ namespace PortQuery {
     SOSQLExpression Parser::parseORExpression() {
 
         SOSQLExpression expression = parseANDExpression();
-        while (MATCH<ORToken>(m_lexer.peek())) {
+        while (MATCH_KEYWORD<KeywordToken::OR>(m_lexer.peek())) {
 
             m_lexer.nextToken(); // scan past or token
             SOSQLExpression right = parseANDExpression();
@@ -125,7 +173,7 @@ namespace PortQuery {
     SOSQLExpression Parser::parseANDExpression() {
 
         SOSQLExpression expression = parseBooleanFactor();
-        while (MATCH<ANDToken>(m_lexer.peek())) {
+        while (MATCH_KEYWORD<KeywordToken::AND>(m_lexer.peek())) {
 
             m_lexer.nextToken(); // scan past and token
             SOSQLExpression right = parseBooleanFactor();
@@ -138,7 +186,7 @@ namespace PortQuery {
 
     SOSQLExpression Parser::parseBooleanFactor() {
 
-        if(MATCH<NOTToken>(m_lexer.peek())) {
+        if(MATCH_KEYWORD<KeywordToken::NOT>(m_lexer.peek())) {
             m_lexer.nextToken();
             return std::make_unique<NOTExpression>(NOTExpression{parseBooleanExpression()});
         }
@@ -157,8 +205,17 @@ namespace PortQuery {
 
         return std::visit(overloaded {
                 [=] (ComparisonToken) { return parseComparisonExpression(lhs); },
-                [=] (ISToken)             { return parseISExpression(lhs); },
-                [=] (BETWEENToken) {  return parseBETWEENExpression(lhs); }, 
+                [=] (const KeywordToken k) {
+                    switch (k.m_keyword) {
+                        case KeywordToken::IS:
+                            return parseISExpression(lhs);
+                        case KeywordToken::BETWEEN:
+                            return parseBETWEENExpression(lhs);
+                        default:
+                            const std::string exceptionString = "Invalid token in expression: " + getTokenString(k);
+                            throw std::invalid_argument(exceptionString); 
+                        }
+                },
                 [=] (auto const t) -> SOSQLExpression {
                     const std::string exceptionString = "Invalid operator token in expression: " + getTokenString(t);
                     throw std::invalid_argument(exceptionString); 
@@ -174,18 +231,16 @@ namespace PortQuery {
             return false;
         }
 
-        return MATCH<OPENToken, CLOSEDToken, REJECTEDToken, TCPToken, UDPToken>(rhs);
+        return MATCH<QueryResultToken>(rhs) || MATCH_COLUMN<ColumnToken::TCP, ColumnToken::UDP>(rhs);
     }
 
     bool canCompareOperands(const Token lhs, const ComparisonToken::OpType op, const Token rhs) {
         return std::visit(overloaded {
-                [=] (PORTToken)     { return MATCH<PORTToken, NumericToken>(rhs); },
-                [=] (NumericToken)  { return MATCH<PORTToken, NumericToken>(rhs);},
-                [=] (OPENToken)     { return canCompareProtocolOperands(op, rhs); },
-                [=] (CLOSEDToken)   { return canCompareProtocolOperands(op, rhs); },
-                [=] (REJECTEDToken) { return canCompareProtocolOperands(op, rhs); },
-                [=] (TCPToken)      { return canCompareProtocolOperands(op, rhs); },
-                [=] (UDPToken)      { return canCompareProtocolOperands(op, rhs); },
+                [=] (NumericToken)         { return MATCH<NumericToken>(rhs) || MATCH_COLUMN<ColumnToken::PORT>(rhs);},
+                [=] (QueryResultToken)     { return canCompareProtocolOperands(op, rhs); },
+                [=] (const ColumnToken c) {
+                    return ColumnToken::PORT == c.m_column ? MATCH_COLUMN<ColumnToken::PORT>(rhs) || 
+                        MATCH<NumericToken>(rhs) : canCompareProtocolOperands(op, rhs); },
                 [=] (auto const t) -> bool {
                     const std::string exceptionString = "Invalid operator token in expression: " + getTokenString(t);
                     throw std::invalid_argument(exceptionString); 
@@ -218,7 +273,7 @@ namespace PortQuery {
 
         Token rhs = m_lexer.nextToken();
         ComparisonToken::OpType op = ComparisonToken::OP_EQ;
-        if (MATCH<NOTToken>(rhs)) {
+        if (MATCH_KEYWORD<KeywordToken::NOT>(rhs)) {
             op = ComparisonToken::OP_NE;
             rhs = m_lexer.nextToken();
         }
@@ -253,7 +308,7 @@ namespace PortQuery {
             throw std::invalid_argument(exceptionString);
         }
 
-        if (!MATCH<ANDToken>(m_lexer.nextToken())) {
+        if (!MATCH_KEYWORD<KeywordToken::AND>(m_lexer.nextToken())) {
             throw std::invalid_argument("AND keyword missing from BETWEEN clause");
         }
 
@@ -268,17 +323,10 @@ namespace PortQuery {
     SelectSet Parser::parseSelectSetQuantifier() {
 
         return std::visit(overloaded {
-                [=] (PORTToken) { return parseSelectList(); },
-                [=] (TCPToken)  { return parseSelectList(); },
-                [=] (UDPToken)  { return parseSelectList(); },
-
+                [=] (ColumnToken) { return parseSelectList(); },
                 [=] (PunctuationToken<'*'>) -> SelectSet { 
                     m_lexer.nextToken(); 
-                    SelectSet selectedSet{ };
-                    selectedSet.addColumn(PORTToken{});
-                    selectedSet.addColumn(TCPToken{});
-                    selectedSet.addColumn(UDPToken{});
-                    return selectedSet;
+                    return SelectSet{ ColumnToken::PORT, ColumnToken::TCP, ColumnToken::UDP };
                 },
                 [=] (auto t) -> SelectSet {
                     const std::string exceptionString = "Invalid token in select list: " + getTokenString(t);
@@ -294,8 +342,8 @@ namespace PortQuery {
         for (bool moreColumns = true; moreColumns;) {
 
             const Token t = m_lexer.peek();
-            if (MATCH<PORTToken, TCPToken, UDPToken>(t)) {
-                selectedSet.addColumn(t);
+            if (MATCH<ColumnToken>(t)) {
+                selectedSet.addColumn(std::get<ColumnToken>(t).m_column);
                 m_lexer.nextToken();
                 moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
             }
@@ -317,10 +365,11 @@ namespace PortQuery {
     std::string Parser::parseTableReference() {
 
         const Token t = m_lexer.nextToken();
-        if (!MATCH<FROMToken>(t)) {
+        if (!MATCH_KEYWORD<KeywordToken::FROM>(t)) {
             const std::string exceptionString = "FROM token not following column list, invalid token specified: " + getTokenString(t);
             throw std::invalid_argument(exceptionString);
         }
+
         return std::visit(overloaded {
                 [=] (UserToken u)  { return u.m_UserToken; },
                 [=] (auto t) -> std::string { 

@@ -11,8 +11,8 @@
 namespace PortQuery {
     /* Other tokens that could be supported in the future
 
-        AS, ASC, CASE, CROSS, DESC, DESCRIBE, EXISTS, INNER, JOIN, LEFT, MATCH,
-        NATURAL, ON, OUTER, RIGHT, TO, UNION, UNIQUE, USING, WHEN, WITH,
+        AS, ASC, ANY, CASE, COUNT, CROSS, DESC, DESCRIBE, DISTINCT, EXISTS, GROUP_BY, HAVING, IF, IN, INNER, 
+        JOIN, LEFT, LIMIT, MATCH, NATURAL, ON, ORDER, OUTER, RIGHT, TO, UNION, UNIQUE, USING, WHEN, WITH,
     */
 
 
@@ -62,6 +62,23 @@ namespace PortQuery {
         OpType m_opType;
     };
 
+    struct KeywordToken {
+
+        enum Keyword {
+            ALL,
+            AND,
+            BETWEEN,
+            FROM,
+            IS,
+            NOT,
+            OR,
+            SELECT,
+            WHERE
+        };
+
+        Keyword m_keyword;
+
+    };
 
     // This token represents a User string which contains valid characters
     // This could either be a table alias, a URL, a column alias, etc
@@ -70,38 +87,34 @@ namespace PortQuery {
         std::string m_UserToken; 
     };
 
-
-    // Keyword tokens of all the supported SOSQL keywords
-    struct ALLToken { };
-    struct ANDToken { };
-    struct ANYToken { };
-    struct BETWEENToken { };
-    struct COUNTToken { };
-    struct DISTINCTToken { };
-    struct FROMToken { };
-    // GROUP_BY,
-    // HAVING,
-    struct IFToken { };
-    struct INToken { };
-    struct ISToken { };
-    struct LIMITToken { };
-    struct NOTToken { };
-    struct ORToken { };
-    struct ORDERToken { };
-    struct SELECTToken { };
-    struct WHEREToken { };
-
     // These tokens represents query results that can be compared to the columns
     // Currently, there are only three result, OPEN, CLOSED, and REJECTED
-    struct OPENToken { };
-    struct CLOSEDToken { };
-    struct REJECTEDToken { };
+    
+    struct QueryResultToken {
 
+        enum QueryResult {
+            OPEN,
+            CLOSED,
+            REJECTED
+        };
+
+        QueryResult m_queryResult;
+    };
+    
     // This token represents all the column types in the port query "database"
     // For now, there are only three: PORT, TCP, UDP
-    struct PORTToken { };
-    struct TCPToken { };
-    struct UDPToken { };
+    
+    struct ColumnToken {
+
+        enum Column {
+
+            PORT,
+            TCP,
+            UDP
+        };
+
+        Column m_column;
+    };
 
     // This token should be pretty self explanatory.
     struct EOFToken { };
@@ -120,34 +133,10 @@ namespace PortQuery {
         NumericToken,
         ComparisonToken,
         UserToken,
-
-        ALLToken,
-        ANDToken,
-        ANYToken,
-        BETWEENToken,
-        COUNTToken,
-        DISTINCTToken,
-        FROMToken,
-        IFToken,
-        INToken,
-        ISToken,
-        LIMITToken,
-        NOTToken,
-        ORToken,
-        ORDERToken,
-        SELECTToken,
-        WHEREToken,
-
-        OPENToken,
-        CLOSEDToken,
-        REJECTEDToken,
-
-        PORTToken,
-        TCPToken,
-        UDPToken,
-
+        ColumnToken,
+        QueryResultToken,
+        KeywordToken,
         EOFToken,
-
         // All the supported punctuation types below, maybe more to come?
         PunctuationToken<'*'>,
         PunctuationToken<'('>,
@@ -166,9 +155,26 @@ namespace PortQuery {
 
     inline bool MATCH_TERMINAL(const Token t) {
 
-        return MATCH<NumericToken, OPENToken, CLOSEDToken, REJECTEDToken, PORTToken, TCPToken, UDPToken>(t);
+        return MATCH<NumericToken, QueryResultToken, ColumnToken>(t);
     }
 
+    template<ColumnToken::Column... Cs> bool MATCH_COLUMN(const Token t) {
+
+        return std::holds_alternative<ColumnToken>(t) && 
+            std::get<ColumnToken>(t).m_column == isElementPresent<ColumnToken::Column>{Cs...,};
+    }
+
+    template<KeywordToken::Keyword... Ks> bool MATCH_KEYWORD(const Token t) {
+
+        return std::holds_alternative<KeywordToken>(t) && 
+            std::get<KeywordToken>(t).m_keyword == isElementPresent<KeywordToken::Keyword>{Ks...,};
+    }
+
+    template<QueryResultToken::QueryResult... Qs> bool MATCH_QUERY_RESULT(const Token t) {
+
+        return std::holds_alternative<QueryResultToken>(t) && 
+            std::get<QueryResultToken>(t).m_queryResult == isElementPresent<QueryResultToken::QueryResult>{Qs...,};
+    }
 
     class Lexer { 
         public:

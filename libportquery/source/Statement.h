@@ -147,21 +147,19 @@ namespace PortQuery {
 
 
     class SelectSet {
+
         public:
 
-            enum Columns {
-                PORTColumn,
-                TCPColumn,
-                UDPColumn
-            };
+            SelectSet(const std::initializer_list<ColumnToken::Column> columns) : m_selectedColumns(columns) { }
 
+            void addColumn(const ColumnToken::Column c) {
 
-            void addColumn(const Token t);
+                m_selectedColumns.push_back(c);
+            }
 
         private:
 
-            std::vector<Columns> m_selectedColumns;
-        
+            std::vector<ColumnToken::Column> m_selectedColumns;
     };
 
     class SelectStatement : IExpression {
