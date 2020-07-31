@@ -146,7 +146,23 @@ namespace PortQuery {
     };
 
 
-    using SelectSet = std::vector<std::variant<PORTToken, TCPToken, UDPToken>>;
+    class SelectSet {
+        public:
+
+            enum Columns {
+                PORTColumn,
+                TCPColumn,
+                UDPColumn
+            };
+
+
+            void addColumn(const Token t);
+
+        private:
+
+            std::vector<Columns> m_selectedColumns;
+        
+    };
 
     class SelectStatement : IExpression {
         public:

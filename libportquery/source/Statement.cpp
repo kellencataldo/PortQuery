@@ -18,6 +18,15 @@ namespace PortQuery {
         return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
     }
 
+
+    void SelectSet::addColumn(const Token t) {
+        std::visit(overloaded {
+                [=] (const PORTToken p) { m_selectedColumns.push_back(PORTColumn); },
+                [=] (const TCPToken t)  { m_selectedColumns.push_back(TCPColumn); },
+                [=] (const UDPToken u)  { m_selectedColumns.push_back(UDPColumn); } },
+            t);
+    }
+
 /*
     std::tuple<bool, uint16_t> getPreNetworkValue(const Terminal terminal, const uint16_t port) {
 

@@ -274,7 +274,11 @@ namespace PortQuery {
 
                 [=] (PunctuationToken<'*'>) -> SelectSet { 
                     m_lexer.nextToken(); 
-                    return { PORTToken{ }, TCPToken{ }, UDPToken{ } }; 
+                    SelectSet selectedSet{ };
+                    selectedSet.addColumn(PORTToken{});
+                    selectedSet.addColumn(TCPToken{});
+                    selectedSet.addColumn(UDPToken{});
+                    return selectedSet;
                 },
                 [=] (auto t) -> SelectSet {
                     const std::string exceptionString = "Invalid token in select list: " + getTokenString(t);
@@ -286,39 +290,24 @@ namespace PortQuery {
 
     SelectSet Parser::parseSelectList() {
 
-        // FIND A BETTER REPRESENTATION FOR THIS!
         SelectSet selectedSet = { };
         for (bool moreColumns = true; moreColumns;) {
 
-            std::visit( overloaded {
-                [&] (PORTToken) { 
-                    selectedSet.push_back(PORTToken{});
-                    m_lexer.nextToken();
-                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
-                },
- 
-                [&] (TCPToken) { 
-                    selectedSet.push_back(TCPToken{});
-                    m_lexer.nextToken();
-                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
-                },
- 
-                [&] (UDPToken) { 
-                    selectedSet.push_back(UDPToken{});
-                    m_lexer.nextToken();
-                    moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
-                },
+            const Token t = m_lexer.peek();
+            if (MATCH<PORTToken, TCPToken, UDPToken>(t)) {
+                selectedSet.addColumn(t);
+                m_lexer.nextToken();
+                moreColumns = MATCH<PunctuationToken<','>>(m_lexer.peek());
+            }
 
-                [&] (PunctuationToken<','>) {
-                    m_lexer.nextToken();
-                },
+            else if (MATCH<PunctuationToken<','>>(t)) {
+                m_lexer.nextToken();
+            }
 
-                [=] (auto t) -> void {
-                    std::string exceptionString = "Invalid token specified in select list: " + getTokenString(t);
-                    throw std::invalid_argument(exceptionString);
-                } }, 
-
-            m_lexer.peek());
+            else {
+                std::string exceptionString = "Invalid token specified in select list: " + getTokenString(t);
+                throw std::invalid_argument(exceptionString);
+            }
         }
 
         return selectedSet;
