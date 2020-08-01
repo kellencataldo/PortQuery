@@ -32,6 +32,23 @@ namespace PortQuery {
 
     using SOSQLExpression = std::unique_ptr<IExpression>;
 
+    struct QUERYRESULTTerminal : IExpression {
+
+    };
+
+    struct NUMERALTerminal : IExpression {
+
+
+    };
+
+    struct PORTTerminal : IExpression {
+
+    };
+
+    struct PROTOCOLTerminal : IExpression {
+
+    };
+
     struct ORExpression : IExpression {
 
         ORExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
@@ -89,19 +106,9 @@ namespace PortQuery {
 
     struct BETWEENExpression : IExpression {
 
-        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token terminal) :
-            m_lowerBound(lowerBound), m_upperBound(upperBound) { }
-
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
-
-
-            return Tristate::TRUE_STATE;
-        }
- 
-        virtual NetworkProtocols collectRequiredProtocols(void) const override {
-
-             return NetworkProtocols::NONE;
-        }
+        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token terminal);
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+        virtual NetworkProtocols collectRequiredProtocols(void) const override;
 
         static bool Evaluate(const uint16_t value, const uint16_t lowerBound, const uint16_t upperBound) {
 
@@ -110,24 +117,21 @@ namespace PortQuery {
 
         uint16_t m_lowerBound;
         uint16_t m_upperBound;
+
+        SOSQLExpression m_terminal;
     };
 
     struct ComparisonExpression : IExpression {
 
-        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op)  { }
-
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
-
-            return Tristate::TRUE_STATE;
-        }
-
-        virtual NetworkProtocols collectRequiredProtocols(void) const override {
-            return NetworkProtocols::NONE;
-        }
+        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs);
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+        virtual NetworkProtocols collectRequiredProtocols(void) const override;
 
         static bool Evaluate(ComparisonToken::OpType, const uint16_t lhs, const uint16_t rhs);
 
         ComparisonToken::OpType m_op;
+        SOSQLExpression m_LHSTerminal;
+        SOSQLExpression m_RHSTerminal;
     };
 
     struct NULLExpression : IExpression {
@@ -151,6 +155,16 @@ namespace PortQuery {
         public:
 
             SelectSet(const std::initializer_list<ColumnToken::Column> columns) : m_selectedColumns(columns) { }
+
+            bool operator==(const std::vector<ColumnToken::Column> other) const {
+
+                return m_selectedColumns == other;
+            }
+
+            friend bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs) {
+
+                return rhs == lhs;
+            }
 
             void addColumn(const ColumnToken::Column c) {
 

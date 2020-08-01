@@ -340,7 +340,6 @@ namespace PortQuery {
 
         SelectSet selectedSet = { };
         for (bool moreColumns = true; moreColumns;) {
-
             const Token t = m_lexer.peek();
             if (MATCH<ColumnToken>(t)) {
                 selectedSet.addColumn(std::get<ColumnToken>(t).m_column);

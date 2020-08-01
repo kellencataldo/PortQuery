@@ -18,6 +18,27 @@ namespace PortQuery {
         return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
     }
 
+
+    SOSQLExpression createTerminalFromToken(const Token t) {
+
+
+    }
+
+
+    BETWEENExpression::BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token terminal) :
+        m_lowerBound(lowerBound), m_upperBound(upperBound) {
+
+            m_
+
+
+    }
+
+    ComparisonExpression::ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op) {
+
+    }
+  
+  
+
 /*
     std::tuple<bool, uint16_t> getPreNetworkValue(const Terminal terminal, const uint16_t port) {
 
