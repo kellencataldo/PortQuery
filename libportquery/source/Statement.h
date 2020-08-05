@@ -7,9 +7,8 @@
 
 #include "Lexer.h"
 #include "Network.h"
+#include "Environment.h"
 
-
-#define UNUSED_PARAMETER(x) (void) (x)
 
 namespace PortQuery {
 
@@ -32,7 +31,23 @@ namespace PortQuery {
 
     using SOSQLExpression = std::unique_ptr<IExpression>;
 
-    struct QUERYRESULTTerminal : IExpression {
+    template <typename T> struct ITerminal {
+
+        virtual T getTerminalValue(EnvironmentPtr env) = 0;
+        virtual std::pair<bool, T> getPreNetworkValue(const EnvironmentPtr env) = 0;
+        virtual ~ITerminal() = default;
+    };
+
+    struct NumeralTerminal : ITerminal<uint16_t> {
+
+    };
+
+    struct PortTerminal : ITerminal<uint16_t> {
+
+    };
+
+/*
+    struct QUERYRESULTTerminal : IExpression< {
 
     };
 
@@ -48,6 +63,8 @@ namespace PortQuery {
     struct PROTOCOLTerminal : IExpression {
 
     };
+
+    */
 
     struct ORExpression : IExpression {
 
