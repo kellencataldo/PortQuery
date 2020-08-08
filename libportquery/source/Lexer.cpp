@@ -22,9 +22,9 @@ namespace PortQuery {
             {"WHERE",    KeywordToken{ KeywordToken::WHERE }},
 
             // Not technically tokens but the logic is the same
-            {"OPEN",     QueryResultToken{ QueryResultToken::OPEN }},
-            {"CLOSED",   QueryResultToken{ QueryResultToken::CLOSED }},
-            {"REJECTED", QueryResultToken{ QueryResultToken::REJECTED }},
+            {"OPEN",     QueryResultToken{ PQ_QUERY_RESULT::OPEN }},
+            {"CLOSED",   QueryResultToken{ PQ_QUERY_RESULT::CLOSED }},
+            {"REJECTED", QueryResultToken{ PQ_QUERY_RESULT::REJECTED }},
             {"PORT",     ColumnToken{ ColumnToken::PORT }},
             {"TCP",      ColumnToken{ ColumnToken::TCP }},
             {"UDP",      ColumnToken{ ColumnToken::UDP }},

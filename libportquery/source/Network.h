@@ -33,7 +33,7 @@ template<typename T> typename std::enable_if<EnableBinaryOperators<T>::m_enable,
 
 
 // other operators go here
-enum class NetworkProtocols {
+enum class NetworkProtocol {
     NONE = 0,
     TCP  = 1 << 0,
     UDP  = 1 << 1,
@@ -41,7 +41,7 @@ enum class NetworkProtocols {
     // other protocols go here
 };
 
-template <> struct EnableBinaryOperators<NetworkProtocols> {
+template <> struct EnableBinaryOperators<NetworkProtocol> {
     static const bool m_enable = true;
 };
 

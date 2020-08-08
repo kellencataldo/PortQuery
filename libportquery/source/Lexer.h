@@ -7,6 +7,8 @@
 #include <functional>
 #include <algorithm>
 
+#include "PortQuery.h"
+
 
 namespace PortQuery {
     /* Other tokens that could be supported in the future
@@ -92,13 +94,7 @@ namespace PortQuery {
     
     struct QueryResultToken {
 
-        enum QueryResult {
-            OPEN,
-            CLOSED,
-            REJECTED
-        };
-
-        QueryResult m_queryResult;
+        PQ_QUERY_RESULT m_queryResult;
     };
     
     // This token represents all the column types in the port query "database"
@@ -170,10 +166,10 @@ namespace PortQuery {
             std::get<KeywordToken>(t).m_keyword == isElementPresent<KeywordToken::Keyword>{Ks...,};
     }
 
-    template<QueryResultToken::QueryResult... Qs> bool MATCH_QUERY_RESULT(const Token t) {
+    template<PQ_QUERY_RESULT... Qs> bool MATCH_QUERY_RESULT(const Token t) {
 
         return std::holds_alternative<QueryResultToken>(t) && 
-            std::get<QueryResultToken>(t).m_queryResult == isElementPresent<QueryResultToken::QueryResult>{Qs...,};
+            std::get<QueryResultToken>(t).m_queryResult == isElementPresent<PQ_QUERY_RESULT>{Qs...,};
     }
 
     class Lexer { 

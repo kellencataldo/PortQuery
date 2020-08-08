@@ -8,6 +8,7 @@
 #include "Lexer.h"
 #include "Network.h"
 #include "Environment.h"
+#include "PortQuery.h"
 
 
 namespace PortQuery {
@@ -22,100 +23,108 @@ namespace PortQuery {
     Tristate operator&&(const Tristate lhs, const Tristate rhs);
     Tristate operator!(const Tristate rhs);
 
-    struct IExpression {
+    template <typename T> struct ITerminal;
+    using SOSQLTypeNumeric = std::unique_ptr<ITerminal<uint16_t>>;
+    using SOSQLTypeQuery = std::unique_ptr<ITerminal<PQ_QUERY_RESULT>>;
+    using SOSQLTerminal = std::variant<SOSQLTypeNumeric, SOSQLTypeQuery>;
 
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const = 0;
-        virtual NetworkProtocols collectRequiredProtocols(void) const = 0;
-        virtual ~IExpression() = default;
-    };
-
+    struct IExpression;
     using SOSQLExpression = std::unique_ptr<IExpression>;
 
-    template <typename T> struct ITerminal {
+    class SelectStatement;
+    using SOSQLSelectStatement = std::unique_ptr<SelectStatement>;
 
-        virtual T getTerminalValue(EnvironmentPtr env) = 0;
-        virtual std::pair<bool, T> getPreNetworkValue(const EnvironmentPtr env) = 0;
-        virtual ~ITerminal() = default;
+   template <typename T> struct ITerminal {
+
+       virtual T getTerminalValue(EnvironmentPtr env) = 0;
+       virtual std::pair<bool, T> getPreNetworkValue(const EnvironmentPtr env) = 0;
+
+       virtual NetworkProtocol collectRequiredProtocols(void) const; 
+
+       virtual ~ITerminal() = default;
     };
 
-    struct NumeralTerminal : ITerminal<uint16_t> {
+    struct NumericTerminal : ITerminal<uint16_t> {
 
+        NumericTerminal(const uint16_t value) : m_value(value) { }
+
+        virtual uint16_t getTerminalValue(EnvironmentPtr env) override;
+        virtual std::pair<bool, uint16_t> getPreNetworkValue(const EnvironmentPtr env) override;
+
+        uint16_t m_value;
     };
 
     struct PortTerminal : ITerminal<uint16_t> {
 
-    };
+        PortTerminal() = default;
 
-/*
-    struct QUERYRESULTTerminal : IExpression< {
-
-    };
-
-    struct NUMERALTerminal : IExpression {
-
+        virtual uint16_t getTerminalValue(EnvironmentPtr env) override;
+        virtual std::pair<bool, uint16_t> getPreNetworkValue(const EnvironmentPtr env) override;
 
     };
 
-    struct PORTTerminal : IExpression {
+    struct QueryResultTerminal : ITerminal<PQ_QUERY_RESULT> {
 
+        QueryResultTerminal(const PQ_QUERY_RESULT queryResult) : m_queryResult(queryResult) { }
+
+        virtual PQ_QUERY_RESULT getTerminalValue(EnvironmentPtr env) override;
+        virtual std::pair<bool, PQ_QUERY_RESULT> getPreNetworkValue(const EnvironmentPtr env) override;
+
+        PQ_QUERY_RESULT m_queryResult;
     };
 
-    struct PROTOCOLTerminal : IExpression {
+    struct ProtocolTerminal : ITerminal<PQ_QUERY_RESULT> {
 
+        ProtocolTerminal(const NetworkProtocol protocol) : m_protocol(protocol) { }
+
+        virtual PQ_QUERY_RESULT getTerminalValue(EnvironmentPtr env) override;
+        virtual std::pair<bool, PQ_QUERY_RESULT> getPreNetworkValue(const EnvironmentPtr env) override;
+
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
+
+        NetworkProtocol m_protocol;
     };
 
-    */
+
+    SOSQLTerminal getTerminalFromToken(const Token t);
+
+    struct IExpression {
+
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const = 0;
+        virtual NetworkProtocol collectRequiredProtocols(void) const = 0;
+
+        virtual ~IExpression() = default;
+    };
+
 
     struct ORExpression : IExpression {
 
         ORExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
-
-            return m_left->attemptPreNetworkEval(port) || m_right->attemptPreNetworkEval(port);
-        }
-
-        virtual NetworkProtocols collectRequiredProtocols(void) const override {
-
-            return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
-        }
-
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
         SOSQLExpression m_left;
         SOSQLExpression m_right;
     };
+
 
     struct ANDExpression : IExpression {
 
         ANDExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
-
-            return m_left->attemptPreNetworkEval(port) && m_right->attemptPreNetworkEval(port);
-        }
-
-        virtual NetworkProtocols collectRequiredProtocols(void) const override {
-
-            return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
-        }
-
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         SOSQLExpression m_left;
         SOSQLExpression m_right;
     };
 
+
     struct NOTExpression : IExpression {
 
         NOTExpression(SOSQLExpression expr) : m_expr(std::move(expr)) { }
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
-
-            return !m_expr->attemptPreNetworkEval(port);
-        }
-
-        virtual NetworkProtocols collectRequiredProtocols(void) const override {
-
-            return m_expr->collectRequiredProtocols();
-        }
-
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         SOSQLExpression m_expr;
     };
@@ -123,47 +132,36 @@ namespace PortQuery {
 
     struct BETWEENExpression : IExpression {
 
-        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token terminal);
+        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token t) :
+            m_lowerBound(lowerBound), m_upperBound(upperBound), m_terminal(getTerminalFromToken(t)) { }
+
         virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
-        virtual NetworkProtocols collectRequiredProtocols(void) const override;
-
-        static bool Evaluate(const uint16_t value, const uint16_t lowerBound, const uint16_t upperBound) {
-
-            return lowerBound <= value && value <= upperBound;
-        }
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         uint16_t m_lowerBound;
         uint16_t m_upperBound;
 
-        SOSQLExpression m_terminal;
+        SOSQLTerminal m_terminal;
     };
 
     struct ComparisonExpression : IExpression {
 
-        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs);
+        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op), 
+            m_LHSTerminal(getTerminalFromToken(lhs)), m_RHSTerminal(getTerminalFromToken(rhs)) { }
         virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
-        virtual NetworkProtocols collectRequiredProtocols(void) const override;
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         static bool Evaluate(ComparisonToken::OpType, const uint16_t lhs, const uint16_t rhs);
 
         ComparisonToken::OpType m_op;
-        SOSQLExpression m_LHSTerminal;
-        SOSQLExpression m_RHSTerminal;
+        SOSQLTerminal m_LHSTerminal;
+        SOSQLTerminal m_RHSTerminal;
     };
 
     struct NULLExpression : IExpression {
 
-        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
-
-            return Tristate::TRUE_STATE;
-        }
-
-
-        virtual NetworkProtocols collectRequiredProtocols(void) const override {
-
-             return NetworkProtocols::NONE;
-        }
-
+        virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
+        virtual NetworkProtocol collectRequiredProtocols(void) const override;
     };
 
 
@@ -171,26 +169,21 @@ namespace PortQuery {
 
         public:
 
+            using ColumnVector = std::vector<ColumnToken::Column>;
+
             SelectSet(const std::initializer_list<ColumnToken::Column> columns) : m_selectedColumns(columns) { }
 
-            bool operator==(const std::vector<ColumnToken::Column> other) const {
+            void addColumn(const ColumnToken::Column c);
 
-                return m_selectedColumns == other;
-            }
+            ColumnVector::const_iterator begin() const;
+            ColumnVector::const_iterator end() const;
 
-            friend bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs) {
-
-                return rhs == lhs;
-            }
-
-            void addColumn(const ColumnToken::Column c) {
-
-                m_selectedColumns.push_back(c);
-            }
+            bool operator==(const std::vector<ColumnToken::Column> other) const;
+            friend bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs);
 
         private:
 
-            std::vector<ColumnToken::Column> m_selectedColumns;
+            ColumnVector m_selectedColumns;
     };
 
     class SelectStatement : IExpression {
@@ -200,21 +193,11 @@ namespace PortQuery {
                 m_tableExpression(std::move(tableExpression)) { }
 
 
-            virtual NetworkProtocols collectRequiredProtocols(void) const override {
-
-                return NetworkProtocols::NONE;
-
-            }
+            virtual NetworkProtocol collectRequiredProtocols(void) const override;
         
-            virtual Tristate attemptPreNetworkEval(const uint16_t port) const override {
+            virtual Tristate attemptPreNetworkEval(const uint16_t port) const override;
 
-                return m_tableExpression->attemptPreNetworkEval(port);
-            }
-
-            SelectSet getSelectSet() const {
-
-                return m_selectedSet;
-            }
+            SelectSet getSelectSet() const;
 
             virtual ~SelectStatement() = default;
             SelectStatement(SelectStatement&&) = default;
@@ -227,6 +210,4 @@ namespace PortQuery {
             std::string m_tableReference;
             SOSQLExpression m_tableExpression;
     };
-
-    using SOSQLSelectStatement = std::unique_ptr<SelectStatement>;
 }

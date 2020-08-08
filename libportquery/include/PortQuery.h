@@ -9,15 +9,13 @@
 
 namespace PortQuery {
 
-
-    using PQ_PORT = uint16_t;
-    enum PQ_QUERY_RESULT { 
+    enum class PQ_QUERY_RESULT { 
             OPEN = 0,
             CLOSED = 1,
             REJECTED = 2
         };
 
-    using PQ_COLUMN = std::variant<PQ_PORT, PQ_QUERY_RESULT>;
+    using PQ_COLUMN = std::variant<uint16_t, PQ_QUERY_RESULT>;
     using PQ_ROW = std::vector<PQ_COLUMN>;
     using PQCallback = std::function<void(std::any, PQ_ROW)>;
 

@@ -90,11 +90,11 @@ namespace PortQuery {
         
         std::string prefix{"PROTOCOL TOKEN: "};
         switch (q.m_queryResult) {
-            case QueryResultToken::OPEN:
+            case PQ_QUERY_RESULT::OPEN:
                 prefix += "OPEN";
-            case QueryResultToken::CLOSED:
+            case PQ_QUERY_RESULT::CLOSED:
                 prefix += "CLOSED";
-            case QueryResultToken::REJECTED:
+            case PQ_QUERY_RESULT::REJECTED:
                 prefix += "REJECTED";
             default:
                 prefix += "UNKOWN QUERY RESULT TOKEN";

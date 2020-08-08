@@ -18,73 +18,232 @@ namespace PortQuery {
         return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
     }
 
+    template <typename T> NetworkProtocol ITerminal<T>::collectRequiredProtocols(void) const {
 
-    SOSQLExpression createTerminalFromToken(const Token t) {
+        return NetworkProtocol::NONE;
+    }
 
+    NetworkProtocol ProtocolTerminal::collectRequiredProtocols(void) const {
 
+        return m_protocol;
     }
 
 
-    BETWEENExpression::BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token terminal) :
-        m_lowerBound(lowerBound), m_upperBound(upperBound) {
+    SOSQLTerminal getTerminalFromToken(const Token t) {
 
-            m_
+        if (MATCH<NumericToken>(t)) {
 
+            return std::move(std::make_unique<NumericTerminal>(std::get<NumericToken>(t).m_value));
+        }
 
+        else if (MATCH_COLUMN<ColumnToken::PORT>(t)) {
+
+            return std::move(std::make_unique<PortTerminal>());
+        }
+
+        else if (MATCH<QueryResultToken>(t)) {
+
+            return std::move(std::make_unique<QueryResultTerminal>(std::get<QueryResultToken>(t).m_queryResult));
+        }
+
+        else if (MATCH_COLUMN<ColumnToken::TCP, ColumnToken::UDP>(t)) {
+
+            NetworkProtocol p = NetworkProtocol::NONE;
+            switch (std::get<ColumnToken>(t).m_column) {
+                case ColumnToken::TCP:
+                    p = NetworkProtocol::TCP;
+                case ColumnToken::UDP:
+                    p = NetworkProtocol::UDP;
+                default:
+                    p = NetworkProtocol::NONE; // better error handling here.
+            }
+
+            return std::move(std::make_unique<ProtocolTerminal>(p));
+        }
+
+        throw std::invalid_argument("Unable to construct terminal from non terminal token");
     }
 
-    ComparisonExpression::ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op) {
 
+    // OR EXPRESSION
+
+    Tristate ORExpression::attemptPreNetworkEval(const uint16_t port) const {
+
+        return m_left->attemptPreNetworkEval(port) || m_right->attemptPreNetworkEval(port);
     }
-  
-  
+
+    NetworkProtocol ORExpression::collectRequiredProtocols(void) const {
+
+        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
+    }
+
+
+    // AND EXPRESSION
+
+    Tristate ANDExpression::attemptPreNetworkEval(const uint16_t port) const {
+
+        return m_left->attemptPreNetworkEval(port) && m_right->attemptPreNetworkEval(port);
+    }
+
+    NetworkProtocol ANDExpression::collectRequiredProtocols(void) const {
+
+        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
+    }
+
+
+    // NOTExpression
+
+   Tristate NOTExpression::attemptPreNetworkEval(const uint16_t port) const {
+
+        return !m_expr->attemptPreNetworkEval(port);
+    }
+
+   NetworkProtocol NOTExpression::collectRequiredProtocols(void) const {
+
+        return m_expr->collectRequiredProtocols();
+   }
+
+
+   template <typename T, typename E> bool Evaluate(const T lhs, const E rhs, const ComparisonToken::OpType op, EnvironmentPtr env) {
+
+       throw std::invalid_argument("Unable to compare mismatched terminal types"); // probably better message should be printed here.
+   }
+
+   template <typename T> bool Evaluate(const std::unique_ptr<ITerminal<T>> lhs, const std::unique_ptr<ITerminal<T>> rhs, 
+           const ComparisonToken::OpType op, EnvironmentPtr env) {
+
+
+       T LHSValue = lhs->getTerminalValue(env);
+       T RHSValue = rhs->getTerminalValue(env);
+
+        switch (op) {
+            case ComparisonToken::OP_EQ:
+                return LHSValue == RHSValue;
+            case ComparisonToken::OP_GT:
+                return LHSValue > RHSValue;
+            case ComparisonToken::OP_LT:
+                return LHSValue < RHSValue;
+            case ComparisonToken::OP_GTE:
+                return LHSValue >= RHSValue;
+            case ComparisonToken::OP_LTE:
+                return LHSValue <= RHSValue;
+            case ComparisonToken::OP_NE:
+                return LHSValue != RHSValue;
+            default:
+                return false; // need better error handling 
+        }
+   }
+
+
+
+   // Between expression
+
+   Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
+
+       // return std::visit( [] (auto&& terminal) { return terminal->collectRequiredProtocols(); }, m_terminal);
+   }
+
+
+   NetworkProtocol BETWEENExpression::collectRequiredProtocols(void) const {
+
+       return std::visit( [] (auto&& terminal) { return terminal->collectRequiredProtocols(); }, m_terminal);
+   }
+
+   // Comparison expression
+
+   Tristate ComparisonExpression::attemptPreNetworkEval(const uint16_t port) const {
+
+
+   }
+
+   NetworkProtocol ComparisonExpression::collectRequiredProtocols(void) const {
+
+       return std::visit([](auto&& lhs, auto&& rhs) { 
+               return lhs->collectRequiredProtocols() | rhs->collectRequiredProtocols(); 
+            }, m_LHSTerminal, m_RHSTerminal);
+   }
+
+
+   // NULL EXPRESSION
+
+   Tristate NULLExpression::attemptPreNetworkEval(const uint16_t port) const {
+
+       return Tristate::TRUE_STATE;
+   }
+
+   NetworkProtocol NULLExpression::collectRequiredProtocols(void) const {
+
+       return NetworkProtocol::NONE;
+   }
+
+
+   void SelectSet::addColumn(const ColumnToken::Column c) {
+
+       m_selectedColumns.push_back(c);
+   }
+
+   SelectSet::ColumnVector::const_iterator SelectSet::begin() const {
+
+       return m_selectedColumns.begin();
+   }
+
+   SelectSet::ColumnVector::const_iterator SelectSet::end() const {
+
+       return m_selectedColumns.end();
+   }
+
+   bool SelectSet::operator==(const std::vector<ColumnToken::Column> other) const {
+
+       return m_selectedColumns == other;
+   }
+   
+   bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs) {
+
+       return rhs == lhs;
+   }
+
+
+
+    // SELECT STATEMENT
+
+    SelectSet SelectStatement::getSelectSet() const {
+
+        return m_selectedSet;
+    }
+
+    
+    Tristate SelectStatement::attemptPreNetworkEval(const uint16_t port) const {
+
+        return m_tableExpression->attemptPreNetworkEval(port);
+    }
+
+
+    NetworkProtocol SelectStatement::collectRequiredProtocols() const {
+
+        NetworkProtocol requestedProtocols = NetworkProtocol::NONE;
+        for (auto i : m_selectedSet) {
+
+            switch (i) {
+
+                case ColumnToken::TCP:
+                   requestedProtocols |= NetworkProtocol::TCP;
+                   break;
+                case ColumnToken::UDP:
+                   requestedProtocols |= NetworkProtocol::UDP;
+                   break;
+                default:
+
+                   // just making the ALE warning go away.
+                   break;
+            }
+        }
+
+        requestedProtocols |= m_tableExpression->collectRequiredProtocols();
+        return requestedProtocols;
+    }
+    
 
 /*
-    std::tuple<bool, uint16_t> getPreNetworkValue(const Terminal terminal, const uint16_t port) {
-
-        auto t = std::visit(overloaded {
-                   // [=] (QueryResultToken q) { return std::make_tuple(true, q.m_queryResult); },
-                   // [=] (NumericToken n)     { return std::make_tuple(true, n.m_value); },
-                    [=] (ColumnToken c)      { return (ColumnToken::PORT == c.m_column) ? std::make_tuple(true, port) :
-                        std::make_tuple<bool, uint16_t>(false, 0);
-                    } },
-                terminal);
-
-        return t;
-    }
-
-
-    NetworkProtocols getProtocolFromColumn(const ColumnToken::Column c) {
-
-        switch (c) {
-            case ColumnToken::TCP:
-                return NetworkProtocols::TCP;
-            case ColumnToken::UDP:
-                return NetworkProtocols::UDP;
-            default:
-                return NetworkProtocols::NONE;
-        }
-    }
-
-
-    NetworkProtocols getNetworkProtocolFromToken(const Terminal terminal) {
-
-        auto t = std::visit(overloaded {
-                    [=] (QueryResultToken q) { return NetworkProtocols::NONE; },
-                    [=] (NumericToken n)     { return NetworkProtocols::NONE; },
-                    [=] (ColumnToken c)      { return getProtocolFromColumn(c.m_column);
-                    } },
-                terminal);
-
-        return t;
-    }
-
-
-    NetworkProtocols BETWEENExpression::collectRequiredProtocols() const {
-
-        return getNetworkProtocolFromToken(m_terminal);
-    }
-
 
     Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
 
@@ -140,17 +299,6 @@ namespace PortQuery {
         return Tristate::UNKNOWN_STATE;
     }
 
-
-    NetworkProtocols SelectStatement::collectRequiredProtocols() const {
-
-        NetworkProtocols requestedProtocols = NetworkProtocols::NONE;
-        for (auto i : m_selectedSet) {
-            requestedProtocols |= getProtocolFromColumn(i);
-        }
-
-        requestedProtocols |= m_tableExpression->collectRequiredProtocols();
-        return requestedProtocols;
-    }
     */
 
 }
