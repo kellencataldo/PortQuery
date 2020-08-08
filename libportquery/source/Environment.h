@@ -13,7 +13,13 @@ namespace PortQuery {
     class IEnvironment {
 
         public:
-            virtual bool submitPortForScan(const uint16_t port, const NetworkProtocols requestedProtocols) = 0;
+
+            virtual bool submitPortForScan(const uint16_t port, const NetworkProtocol requestedProtocols) = 0;
+            virtual void setPort(const uint16_t port);
+            virtual bool getPort(void) const;
+
+        private:
+            uint16_t m_port;
     };
 
 
@@ -26,7 +32,7 @@ namespace PortQuery {
         public:
 
             NetworkEnvironment(const int threadCount) : m_threadPool(threadCount) { }
-            virtual bool submitPortForScan(const uint16_t port, NetworkProtocols requestedProtocols) override;
+            virtual bool submitPortForScan(const uint16_t port, NetworkProtocol requestedProtocols) override;
 
         private:
 
@@ -38,15 +44,8 @@ namespace PortQuery {
 
         public:
 
-             static void setGenerator(const GeneratorFunction generator) {
-                
-                 m_generator = generator;
-             }
-
-             static EnvironmentPtr createEnvironment(const unsigned int threadCount) {
-
-                 return m_generator(threadCount);
-             }
+             static void setGenerator(const GeneratorFunction generator);
+             static EnvironmentPtr createEnvironment(const unsigned int threadCount);
 
         private:
             static EnvironmentPtr defaultGenerator(const int threadCount) {

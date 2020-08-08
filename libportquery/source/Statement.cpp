@@ -23,6 +23,39 @@ namespace PortQuery {
         return NetworkProtocol::NONE;
     }
 
+    template <typename T> std::pair<bool, T> ITerminal<T>::getPreNetworkValue(EnvironmentPtr env) {
+
+        return { true, getValue(env) };
+    }
+
+    // Terminals
+    uint16_t NumericTerminal::getValue(EnvironmentPtr env) {
+
+        return m_value;
+    }
+
+   uint16_t PortTerminal::getValue(EnvironmentPtr env) {
+
+       return env->getPort();
+   }
+
+   PQ_QUERY_RESULT QueryResultTerminal::getValue(EnvironmentPtr env) {
+
+       return m_queryResult;
+   }
+
+   PQ_QUERY_RESULT ProtocolTerminal::getValue(EnvironmentPtr env) {
+
+       // this will need to be fixed please;
+       return PQ_QUERY_RESULT::CLOSED;
+
+   }
+    
+   std::pair<bool, PQ_QUERY_RESULT> ProtocolTerminal::getPreNetworkValue(EnvironmentPtr env) {
+
+       return { false, PQ_QUERY_RESULT::CLOSED };
+   }
+
     NetworkProtocol ProtocolTerminal::collectRequiredProtocols(void) const {
 
         return m_protocol;
@@ -67,9 +100,9 @@ namespace PortQuery {
 
     // OR EXPRESSION
 
-    Tristate ORExpression::attemptPreNetworkEval(const uint16_t port) const {
+    Tristate ORExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
 
-        return m_left->attemptPreNetworkEval(port) || m_right->attemptPreNetworkEval(port);
+        return m_left->attemptPreNetworkEval(env) || m_right->attemptPreNetworkEval(env);
     }
 
     NetworkProtocol ORExpression::collectRequiredProtocols(void) const {
@@ -80,9 +113,9 @@ namespace PortQuery {
 
     // AND EXPRESSION
 
-    Tristate ANDExpression::attemptPreNetworkEval(const uint16_t port) const {
+    Tristate ANDExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
 
-        return m_left->attemptPreNetworkEval(port) && m_right->attemptPreNetworkEval(port);
+        return m_left->attemptPreNetworkEval(env) && m_right->attemptPreNetworkEval(env);
     }
 
     NetworkProtocol ANDExpression::collectRequiredProtocols(void) const {
@@ -93,9 +126,9 @@ namespace PortQuery {
 
     // NOTExpression
 
-   Tristate NOTExpression::attemptPreNetworkEval(const uint16_t port) const {
+   Tristate NOTExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
 
-        return !m_expr->attemptPreNetworkEval(port);
+        return !m_expr->attemptPreNetworkEval(env);
     }
 
    NetworkProtocol NOTExpression::collectRequiredProtocols(void) const {
@@ -104,43 +137,47 @@ namespace PortQuery {
    }
 
 
-   template <typename T, typename E> bool Evaluate(const T lhs, const E rhs, const ComparisonToken::OpType op, EnvironmentPtr env) {
+   template <typename T, typename E> bool Evaluate(const ComparisonToken::OpType op, const T lhs, const E rhs) { 
 
        throw std::invalid_argument("Unable to compare mismatched terminal types"); // probably better message should be printed here.
    }
 
-   template <typename T> bool Evaluate(const std::unique_ptr<ITerminal<T>> lhs, const std::unique_ptr<ITerminal<T>> rhs, 
-           const ComparisonToken::OpType op, EnvironmentPtr env) {
-
-
-       T LHSValue = lhs->getTerminalValue(env);
-       T RHSValue = rhs->getTerminalValue(env);
+   template <typename T> bool Evaluate(const ComparisonToken::OpType op, const T lhs, const T rhs) {
 
         switch (op) {
             case ComparisonToken::OP_EQ:
-                return LHSValue == RHSValue;
+                return lhs == rhs;
             case ComparisonToken::OP_GT:
-                return LHSValue > RHSValue;
+                return lhs > rhs;
             case ComparisonToken::OP_LT:
-                return LHSValue < RHSValue;
+                return lhs < rhs;
             case ComparisonToken::OP_GTE:
-                return LHSValue >= RHSValue;
+                return lhs >= rhs;
             case ComparisonToken::OP_LTE:
-                return LHSValue <= RHSValue;
+                return lhs <= rhs;
             case ComparisonToken::OP_NE:
-                return LHSValue != RHSValue;
+                return lhs != rhs;
             default:
                 return false; // need better error handling 
         }
    }
 
-
-
    // Between expression
 
-   Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
+   Tristate BETWEENExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
 
-       // return std::visit( [] (auto&& terminal) { return terminal->collectRequiredProtocols(); }, m_terminal);
+       return std::visit( [env] (auto&& lowerBound, auto&& upperBound, auto&& terminal) -> Tristate { 
+                const auto [valAvailable, val] = terminal->getPreNetworkValue(env);
+                if (valAvailable) {
+                    const auto lowerVal = lowerBound->getValue(env);
+                    const auto upperVal = upperBound->getValue(env);
+                    return Evaluate(ComparisonToken::OP_GTE, val, lowerVal) && 
+                        Evaluate(ComparisonToken::OP_LTE, val, upperVal) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
+                }
+
+                return Tristate::UNKNOWN_STATE;
+            },
+        m_lowerBound, m_upperBound, m_terminal);
    }
 
 
@@ -151,9 +188,20 @@ namespace PortQuery {
 
    // Comparison expression
 
-   Tristate ComparisonExpression::attemptPreNetworkEval(const uint16_t port) const {
+   Tristate ComparisonExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
 
+       return std::visit( [&] (auto&& lhs, auto&& rhs) -> Tristate { 
+                const auto [lhsAvailable, lhsVal] = lhs->getPreNetworkValue(env);
+                const auto [rhsAvailable, rhsVal] = rhs->getPreNetworkValue(env);
+                if (lhsAvailable && rhsAvailable) {
+                    return Evaluate(m_op, lhsVal, rhsVal) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
+                }
 
+                return Tristate::UNKNOWN_STATE;
+            },
+
+        m_LHSTerminal, m_RHSTerminal);
+ 
    }
 
    NetworkProtocol ComparisonExpression::collectRequiredProtocols(void) const {
@@ -166,7 +214,7 @@ namespace PortQuery {
 
    // NULL EXPRESSION
 
-   Tristate NULLExpression::attemptPreNetworkEval(const uint16_t port) const {
+   Tristate NULLExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
 
        return Tristate::TRUE_STATE;
    }
@@ -212,9 +260,9 @@ namespace PortQuery {
     }
 
     
-    Tristate SelectStatement::attemptPreNetworkEval(const uint16_t port) const {
+    Tristate SelectStatement::attemptPreNetworkEval(EnvironmentPtr env) const {
 
-        return m_tableExpression->attemptPreNetworkEval(port);
+        return m_tableExpression->attemptPreNetworkEval(env);
     }
 
 
@@ -241,64 +289,4 @@ namespace PortQuery {
         requestedProtocols |= m_tableExpression->collectRequiredProtocols();
         return requestedProtocols;
     }
-    
-
-/*
-
-    Tristate BETWEENExpression::attemptPreNetworkEval(const uint16_t port) const {
-
-        const auto [valAvailable, value] = getPreNetworkValue(m_terminal, port);
-        if (valAvailable) {
-
-            return BETWEENExpression::Evaluate(value, m_lowerBound, m_upperBound) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
-        }
-
-        return Tristate::UNKNOWN_STATE;
-    }
-
-
-    NetworkProtocols ComparisonExpression::collectRequiredProtocols() const {
-
-        return getNetworkProtocolFromToken(m_LHSTerminal) | getNetworkProtocolFromToken(m_RHSTerminal);
-    }
-
-
-    bool ComparisonExpression::Evaluate(ComparisonToken::OpType op, const uint16_t lhs, const uint16_t rhs) {
-
-        switch (op) {
-            case ComparisonToken::OP_EQ:
-                return lhs == rhs;
-            case ComparisonToken::OP_GT:
-                return lhs > rhs;
-            case ComparisonToken::OP_LT:
-                return lhs < rhs;
-            case ComparisonToken::OP_GTE:
-                return lhs >= rhs;
-            case ComparisonToken::OP_LTE:
-                return lhs <= rhs;
-            case ComparisonToken::OP_NE:
-                return lhs != rhs;
-            default:
-                return false; // need better error handling 
-        }
-    }
-
-
-    Tristate ComparisonExpression::attemptPreNetworkEval(const uint16_t port) const {
-
-        const auto [LHSAvailable, LHSValue] = getPreNetworkValue(m_LHSTerminal, port);
-        if (LHSAvailable) {
-
-            const auto [RHSAvailable, RHSvalue] = getPreNetworkValue(m_RHSTerminal, port);
-            if (RHSAvailable) {
-
-                return ComparisonExpression::Evaluate(m_op, LHSValue, RHSvalue) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
-            }
-        }
-
-        return Tristate::UNKNOWN_STATE;
-    }
-
-    */
-
 }

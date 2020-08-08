@@ -53,7 +53,7 @@ TEST(RecognizeTokens, ErrorTokens) {
 
     // after all these errors we still recognize a valid token
     Token token_T6{lexer_T1.nextToken()};
-    EXPECT_TRUE(std::holds_alternative<FROMToken>(token_T6));
+    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::FROM>(token_T6));
 
     // And last but not least is the EOF token
     lexer_T1.nextToken();
@@ -175,52 +175,34 @@ TEST(RecognizeTokens, NumericTokens) {
 
 TEST(RecognizeTokens, KeywordTokens) {
 
-    Lexer lexer_T1{"ALL AND ANY BETWEEN COUNT FROM IF IN IS LIMIT NOT OR ORDER SELECT WHERE"};
+    Lexer lexer_T1{"ALL AND BETWEEN FROM IS NOT OR SELECT WHERE"};
 
     Token token_T1{lexer_T1.nextToken()}; // ALL
-    EXPECT_TRUE(std::holds_alternative<ALLToken>(token_T1));
+    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::ALL>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()}; // AND
-    EXPECT_TRUE(std::holds_alternative<ANDToken>(token_T2));
-
-    Token token_T3{lexer_T1.nextToken()}; // ANY
-    EXPECT_TRUE(std::holds_alternative<ANYToken>(token_T3));
+    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::AND>(token_T2));
 
     Token token_T4{lexer_T1.nextToken()}; // BETWEEN
-    EXPECT_TRUE(std::holds_alternative<BETWEENToken>(token_T4));
-
-    Token token_T5{lexer_T1.nextToken()}; // COUNT
-    EXPECT_TRUE(std::holds_alternative<COUNTToken>(token_T5));
+    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::BETWEEN>(token_T4));
 
     Token token_T6{lexer_T1.nextToken()}; // FROM
-    EXPECT_TRUE(std::holds_alternative<FROMToken>(token_T6));
-
-    Token token_T7{lexer_T1.nextToken()}; // IF
-    ASSERT_TRUE(std::holds_alternative<IFToken>(token_T7));
-
-    Token token_T8{lexer_T1.nextToken()}; // IN
-    ASSERT_TRUE(std::holds_alternative<INToken>(token_T8));
+    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::FROM>(token_T6));
 
     Token token_T9{lexer_T1.nextToken()}; // IS
-    ASSERT_TRUE(std::holds_alternative<ISToken>(token_T9));
-
-    Token token_T11{lexer_T1.nextToken()}; // LIMIT
-    ASSERT_TRUE(std::holds_alternative<LIMITToken>(token_T11));
+    ASSERT_TRUE(MATCH_KEYWORD<KeywordToken::IS>(token_T9));
 
     Token token_T12{lexer_T1.nextToken()}; // NOT
-    ASSERT_TRUE(std::holds_alternative<NOTToken>(token_T12));
+    ASSERT_TRUE(MATCH_KEYWORD<KeywordToken::NOT>(token_T12));
 
     Token token_T13{lexer_T1.nextToken()}; // OR
-    ASSERT_TRUE(std::holds_alternative<ORToken>(token_T13));
-
-    Token token_T14{lexer_T1.nextToken()}; // ORDER 
-    ASSERT_TRUE(std::holds_alternative<ORDERToken>(token_T14));
+    ASSERT_TRUE(MATCH_KEYWORD<KeywordToken::OR>(token_T13));
 
     Token token_T15{lexer_T1.nextToken()}; // SELECT
-    ASSERT_TRUE(std::holds_alternative<SELECTToken>(token_T15));
+    ASSERT_TRUE(MATCH_KEYWORD<KeywordToken::SELECT>(token_T15));
 
     Token token_T16{lexer_T1.nextToken()}; // WHERE
-    ASSERT_TRUE(std::holds_alternative<WHEREToken>(token_T16));
+    ASSERT_TRUE(MATCH_KEYWORD<KeywordToken::WHERE>(token_T16));
 
     Token token_T20{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
@@ -256,13 +238,13 @@ TEST(RecognizeTokens, ColumnTokens) {
     Lexer lexer_T1{"PORT TCP UDP"};
 
     Token token_T1{lexer_T1.nextToken()}; // PORT
-    ASSERT_TRUE(std::holds_alternative<PORTToken>(token_T1));
+    ASSERT_TRUE(MATCH_COLUMN<ColumnToken::PORT>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()}; // TCP
-    ASSERT_TRUE(std::holds_alternative<TCPToken>(token_T2));
+    ASSERT_TRUE(MATCH_COLUMN<ColumnToken::TCP>(token_T2));
 
     Token token_T3{lexer_T1.nextToken()}; // UDP
-    ASSERT_TRUE(std::holds_alternative<UDPToken>(token_T3));
+    ASSERT_TRUE(MATCH_COLUMN<ColumnToken::UDP>(token_T3));
 
     Token token_T20{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
@@ -274,13 +256,13 @@ TEST(RecognizeTokens, QueryResultTokens) {
     Lexer lexer_T1{"OPEN CLOSED REJECTED"};
 
     Token token_T1{lexer_T1.nextToken()}; // OPEN
-    EXPECT_TRUE(std::holds_alternative<OPENToken>(token_T1));
+    EXPECT_TRUE(MATCH_QUERY_RESULT<PQ_QUERY_RESULT::OPEN>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()}; // CLOSED
-    ASSERT_TRUE(std::holds_alternative<CLOSEDToken>(token_T2));
+    ASSERT_TRUE(MATCH_QUERY_RESULT<PQ_QUERY_RESULT::CLOSED>(token_T2));
 
     Token token_T3{lexer_T1.nextToken()}; // REJECTED
-    ASSERT_TRUE(std::holds_alternative<REJECTEDToken>(token_T3));
+    ASSERT_TRUE(MATCH_QUERY_RESULT<PQ_QUERY_RESULT::REJECTED>(token_T3));
 
     Token token_T20{lexer_T1.nextToken()};
     ASSERT_TRUE(std::holds_alternative<EOFToken>(token_T20));
@@ -293,10 +275,10 @@ TEST(LexerFunctionality, Peek) {
     Lexer lexer_T1{"SELECT ,   "};
 
     Token token_T1{lexer_T1.peek()};
-    EXPECT_TRUE(std::holds_alternative<SELECTToken>(token_T1));
+    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::SELECT>(token_T1));
 
     Token token_T2{lexer_T1.nextToken()};
-    ASSERT_TRUE(std::holds_alternative<SELECTToken>(token_T2));
+    ASSERT_TRUE(MATCH_KEYWORD<KeywordToken::SELECT>(token_T2));
 
     Token token_T3{lexer_T1.peek()};
     EXPECT_TRUE(std::holds_alternative<PunctuationToken<','>>(token_T3));

@@ -37,12 +37,13 @@ namespace PortQuery {
     bool PQConn::run() {
 
         static constexpr uint32_t MAX_PORT = static_cast<uint16_t>(-1);
-        const NetworkProtocols requiredProtocols = m_selectStatement->collectRequiredProtocols();
+        const NetworkProtocol requiredProtocols = m_selectStatement->collectRequiredProtocols();
 
         EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
         for (uint32_t port = 0; port <= MAX_PORT; port++) {
 
-            if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(port)) {
+            env->setPort(port);
+            if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(env)) {
 
                 env->submitPortForScan(static_cast<uint16_t>(port), requiredProtocols);
             }
