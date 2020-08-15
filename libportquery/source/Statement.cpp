@@ -91,7 +91,7 @@ namespace PortQuery {
         return PQ_QUERY_RESULT::CLOSED;
     }
 
-    bool compareValue(const ComparisonToken::OpType op, const PQ_QUERY_RESULT other, EnvironmentPtr env) {
+    bool ProtocolTerminal::compareValue(const ComparisonToken::OpType op, const PQ_QUERY_RESULT other, EnvironmentPtr env) {
 
         // fix interface here.
         return false;
@@ -117,7 +117,7 @@ namespace PortQuery {
 
         using ArgumentList = typename decltype(getMethodTraits(&L::compareValue))::ArgumentTypes;
         static_assert(std::tuple_size<ArgumentList>::value == 3, "Argument required to compare");
-        using RequiredArgument = typename std::tuple_element<0, ArgumentList>::type;
+        using RequiredArgument = typename std::tuple_element<1, ArgumentList>::type;
         using ProvidedArgument = typename decltype(getMethodTraits(&R::getValue))::ReturnType;
         return std::is_same_v<RequiredArgument, ProvidedArgument>;
     }
@@ -281,6 +281,11 @@ namespace PortQuery {
        m_selectedColumns.push_back(c);
    }
 
+   SelectSet::ColumnVector SelectSet::getSelectedColumns(void) const {
+       
+       return m_selectedColumns;
+   }
+
    SelectSet::ColumnVector::const_iterator SelectSet::begin() const {
 
        return m_selectedColumns.begin();
@@ -291,9 +296,14 @@ namespace PortQuery {
        return m_selectedColumns.end();
    }
 
-   bool SelectSet::operator==(const std::vector<ColumnToken::Column> other) const {
+   bool SelectSet::operator==(const std::vector<ColumnToken::Column>& other) const {
 
        return m_selectedColumns == other;
+   }
+
+   bool SelectSet::operator==(const SelectSet& other) const {
+
+       return m_selectedColumns == other.getSelectedColumns();
    }
    
    bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs) {

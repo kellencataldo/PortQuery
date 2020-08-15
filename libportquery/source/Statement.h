@@ -162,11 +162,14 @@ namespace PortQuery {
             SelectSet(const std::initializer_list<ColumnToken::Column> columns) : m_selectedColumns(columns) { }
 
             void addColumn(const ColumnToken::Column c);
+            ColumnVector getSelectedColumns(void) const;
 
             ColumnVector::const_iterator begin() const;
             ColumnVector::const_iterator end() const;
 
-            bool operator==(const std::vector<ColumnToken::Column> other) const;
+            bool operator==(const std::vector<ColumnToken::Column>& other) const;
+            bool operator==(const SelectSet& other) const;
+
             friend bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs);
 
         private:
