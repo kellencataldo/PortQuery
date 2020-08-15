@@ -1,4 +1,5 @@
 #include "Statement.h"
+#include "Parser.h"
 
 
 namespace PortQuery {
@@ -18,131 +19,7 @@ namespace PortQuery {
         return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
     }
 
-    template <typename T> NetworkProtocol ITerminal<T>::collectRequiredProtocols(void) const {
-
-        return NetworkProtocol::NONE;
-    }
-
-    template <typename T> std::pair<bool, T> ITerminal<T>::getPreNetworkValue(EnvironmentPtr env) {
-
-        return { true, getValue(env) };
-    }
-
-    // Terminals
-    uint16_t NumericTerminal::getValue(EnvironmentPtr env) {
-
-        return m_value;
-    }
-
-   uint16_t PortTerminal::getValue(EnvironmentPtr env) {
-
-       return env->getPort();
-   }
-
-   PQ_QUERY_RESULT QueryResultTerminal::getValue(EnvironmentPtr env) {
-
-       return m_queryResult;
-   }
-
-   PQ_QUERY_RESULT ProtocolTerminal::getValue(EnvironmentPtr env) {
-
-       // this will need to be fixed please;
-       return PQ_QUERY_RESULT::CLOSED;
-
-   }
-    
-   std::pair<bool, PQ_QUERY_RESULT> ProtocolTerminal::getPreNetworkValue(EnvironmentPtr env) {
-
-       return { false, PQ_QUERY_RESULT::CLOSED };
-   }
-
-    NetworkProtocol ProtocolTerminal::collectRequiredProtocols(void) const {
-
-        return m_protocol;
-    }
-
-
-    SOSQLTerminal getTerminalFromToken(const Token t) {
-
-        if (MATCH<NumericToken>(t)) {
-
-            return std::move(std::make_unique<NumericTerminal>(std::get<NumericToken>(t).m_value));
-        }
-
-        else if (MATCH_COLUMN<ColumnToken::PORT>(t)) {
-
-            return std::move(std::make_unique<PortTerminal>());
-        }
-
-        else if (MATCH<QueryResultToken>(t)) {
-
-            return std::move(std::make_unique<QueryResultTerminal>(std::get<QueryResultToken>(t).m_queryResult));
-        }
-
-        else if (MATCH_COLUMN<ColumnToken::TCP, ColumnToken::UDP>(t)) {
-
-            NetworkProtocol p = NetworkProtocol::NONE;
-            switch (std::get<ColumnToken>(t).m_column) {
-                case ColumnToken::TCP:
-                    p = NetworkProtocol::TCP;
-                case ColumnToken::UDP:
-                    p = NetworkProtocol::UDP;
-                default:
-                    p = NetworkProtocol::NONE; // better error handling here.
-            }
-
-            return std::move(std::make_unique<ProtocolTerminal>(p));
-        }
-
-        throw std::invalid_argument("Unable to construct terminal from non terminal token");
-    }
-
-
-    // OR EXPRESSION
-
-    Tristate ORExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
-
-        return m_left->attemptPreNetworkEval(env) || m_right->attemptPreNetworkEval(env);
-    }
-
-    NetworkProtocol ORExpression::collectRequiredProtocols(void) const {
-
-        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
-    }
-
-
-    // AND EXPRESSION
-
-    Tristate ANDExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
-
-        return m_left->attemptPreNetworkEval(env) && m_right->attemptPreNetworkEval(env);
-    }
-
-    NetworkProtocol ANDExpression::collectRequiredProtocols(void) const {
-
-        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
-    }
-
-
-    // NOTExpression
-
-   Tristate NOTExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
-
-        return !m_expr->attemptPreNetworkEval(env);
-    }
-
-   NetworkProtocol NOTExpression::collectRequiredProtocols(void) const {
-
-        return m_expr->collectRequiredProtocols();
-   }
-
-
-   template <typename T, typename E> bool Evaluate(const ComparisonToken::OpType op, const T lhs, const E rhs) { 
-
-       throw std::invalid_argument("Unable to compare mismatched terminal types"); // probably better message should be printed here.
-   }
-
-   template <typename T> bool Evaluate(const ComparisonToken::OpType op, const T lhs, const T rhs) {
+    template <typename T> bool performCompare(const ComparisonToken::OpType op, const T lhs, const T rhs) {
 
         switch (op) {
             case ComparisonToken::OP_EQ:
@@ -160,41 +37,218 @@ namespace PortQuery {
             default:
                 return false; // need better error handling 
         }
+    }
+
+    uint16_t NumericTerminal::getValue(EnvironmentPtr env) { 
+
+        return m_value;
+    }
+
+    bool NumericTerminal::compareValue(const ComparisonToken::OpType op, const uint16_t other, EnvironmentPtr) {
+
+        return performCompare(op, m_value, other);
+    }
+
+    bool NumericTerminal::preNetworkAvailable(void) const { 
+
+        return true;
+    }
+
+    uint16_t PortTerminal::getValue(EnvironmentPtr env) { 
+
+        return env->getPort();
+    }
+
+    bool PortTerminal::compareValue(const ComparisonToken::OpType op, const uint16_t other, EnvironmentPtr env) { 
+
+        return performCompare(op, env->getPort(), other);
+    }
+
+    bool PortTerminal::preNetworkAvailable(void) const { 
+
+        return true;
+    }
+
+    PQ_QUERY_RESULT QueryResultTerminal::getValue(EnvironmentPtr) { 
+
+        return m_queryResult;
+    }
+
+    bool QueryResultTerminal::compareValue(const ComparisonToken::OpType op, const PQ_QUERY_RESULT other, EnvironmentPtr) {
+
+        return performCompare(op, m_queryResult, other);
+    }
+
+    bool QueryResultTerminal::preNetworkAvailable(void) const { 
+
+        return false;
+    }
+
+
+    PQ_QUERY_RESULT ProtocolTerminal::getValue(EnvironmentPtr env) { 
+
+        // fix interface here.
+        return PQ_QUERY_RESULT::CLOSED;
+    }
+
+    bool compareValue(const ComparisonToken::OpType op, const PQ_QUERY_RESULT other, EnvironmentPtr env) {
+
+        // fix interface here.
+        return false;
+    }
+
+    bool ProtocolTerminal::preNetworkAvailable(void) const { 
+
+        return false;
+    }
+
+    template<typename C, typename R, typename... Args> struct MethodTraits {
+        using ClassType = C;
+        using ReturnType = R;
+        using ArgumentTypes = std::tuple<Args...>;
+    };
+
+    template<typename C, typename R, typename... Args> MethodTraits<C, R, Args...> getMethodTraits(R(C::*)(Args...)) { 
+
+        return { }; 
+    }
+
+    template <typename L, typename R> constexpr auto matchComparisonTraits() -> bool {
+
+        using ArgumentList = typename decltype(getMethodTraits(&L::compareValue))::ArgumentTypes;
+        static_assert(std::tuple_size<ArgumentList>::value == 3, "Argument required to compare");
+        using RequiredArgument = typename std::tuple_element<0, ArgumentList>::type;
+        using ProvidedArgument = typename decltype(getMethodTraits(&R::getValue))::ReturnType;
+        return std::is_same_v<RequiredArgument, ProvidedArgument>;
+    }
+
+    template <typename L, typename R> constexpr auto isValidComparison(int) -> decltype(std::declval<L>().compareValue(
+                std::declval<ComparisonToken::OpType>(),
+                std::declval<R>().getValue(std::declval<EnvironmentPtr>()), 
+                std::declval<EnvironmentPtr>()),
+            matchComparisonTraits<L,R>()) {
+
+        return matchComparisonTraits<L,R>();
+    }
+
+    template <typename L, typename R> constexpr auto isValidComparison(...) {
+
+        return std::false_type();
+    }
+
+    template <class L, class R> auto compare(const ComparisonToken::OpType op, L& lhs, R& rhs, EnvironmentPtr env) -> 
+        typename std::enable_if<isValidComparison<L, R>(int()), bool>::type {
+        return lhs.compareValue(op, rhs.getValue(env), env);
+    }
+
+    template <class L, class R> auto compare(const ComparisonToken::OpType op, L& lhs, R& rhs, EnvironmentPtr env) -> 
+        typename std::enable_if<!isValidComparison<L, R>(int()), bool>::type {
+        // do more stuff here.
+        throw std::invalid_argument("Unable to perform comparison on provided types");
+    }
+
+    SOSQLTerminal getTerminalFromToken(const Token t) {
+
+//        return NumericTerminal{4 };
+
+        return std::visit(overloaded {
+                    [] (const NumericToken n) -> SOSQLTerminal { return NumericTerminal{n.m_value}; },
+                    [] (const QueryResultToken q) -> SOSQLTerminal { return QueryResultTerminal{q.m_queryResult}; },
+                    [] (const ColumnToken c) -> SOSQLTerminal {
+                        switch (c.m_column) {
+                            case ColumnToken::PORT:
+                                return PortTerminal{};
+                            case ColumnToken::TCP:
+                                return ProtocolTerminal{NetworkProtocol::TCP};
+                            case ColumnToken::UDP:
+                                return ProtocolTerminal{NetworkProtocol::UDP};
+                            default:
+                                throw std::invalid_argument("Unable to convert unknown column token to terminal" + getExtendedTokenInfo(c));
+                        }
+                    }, 
+                    [] (const auto t) -> SOSQLTerminal { 
+                        throw std::invalid_argument("Unable to convert unknown token to terminal" + getTokenString(t));
+                    }, },
+                t);
+ //               */
+        }
+
+    // OR EXPRESSION
+
+    Tristate ORExpression::attemptPreNetworkEval(EnvironmentPtr env) {
+
+        return m_left->attemptPreNetworkEval(env) || m_right->attemptPreNetworkEval(env);
+    }
+
+    NetworkProtocol ORExpression::collectRequiredProtocols(void) const {
+
+        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
+    }
+
+
+    // AND EXPRESSION
+
+    Tristate ANDExpression::attemptPreNetworkEval(EnvironmentPtr env) {
+
+        return m_left->attemptPreNetworkEval(env) && m_right->attemptPreNetworkEval(env);
+    }
+
+    NetworkProtocol ANDExpression::collectRequiredProtocols(void) const {
+
+        return m_left->collectRequiredProtocols() | m_right->collectRequiredProtocols();
+    }
+
+
+    // NOTExpression
+
+   Tristate NOTExpression::attemptPreNetworkEval(EnvironmentPtr env) {
+
+        return !m_expr->attemptPreNetworkEval(env);
+    }
+
+   NetworkProtocol NOTExpression::collectRequiredProtocols(void) const {
+
+        return m_expr->collectRequiredProtocols();
    }
 
-   // Between expression
 
-   Tristate BETWEENExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
+    NetworkProtocol getProtocolFromTerminal(const SOSQLTerminal t) {
+
+        return std::visit(overloaded {
+                [] (const ProtocolTerminal p) { return p.m_protocol; },
+                [] (auto) { return NetworkProtocol::NONE; }, 
+            }, t);
+    }
+
+   Tristate BETWEENExpression::attemptPreNetworkEval(EnvironmentPtr env) {
 
        return std::visit( [env] (auto&& lowerBound, auto&& upperBound, auto&& terminal) -> Tristate { 
-                const auto [valAvailable, val] = terminal->getPreNetworkValue(env);
-                if (valAvailable) {
-                    const auto lowerVal = lowerBound->getValue(env);
-                    const auto upperVal = upperBound->getValue(env);
-                    return Evaluate(ComparisonToken::OP_GTE, val, lowerVal) && 
-                        Evaluate(ComparisonToken::OP_LTE, val, upperVal) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
+
+               if (terminal.preNetworkAvailable()) {
+                    return compare(ComparisonToken::OP_GTE, terminal, lowerBound, env) && 
+                        compare(ComparisonToken::OP_LTE, terminal, upperBound, env) ? 
+                        Tristate::TRUE_STATE : Tristate::FALSE_STATE;
                 }
 
                 return Tristate::UNKNOWN_STATE;
             },
+
         m_lowerBound, m_upperBound, m_terminal);
    }
 
 
    NetworkProtocol BETWEENExpression::collectRequiredProtocols(void) const {
 
-       return std::visit( [] (auto&& terminal) { return terminal->collectRequiredProtocols(); }, m_terminal);
+       return getProtocolFromTerminal(m_terminal);
    }
 
    // Comparison expression
 
-   Tristate ComparisonExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
+   Tristate ComparisonExpression::attemptPreNetworkEval(EnvironmentPtr env) {
 
        return std::visit( [&] (auto&& lhs, auto&& rhs) -> Tristate { 
-                const auto [lhsAvailable, lhsVal] = lhs->getPreNetworkValue(env);
-                const auto [rhsAvailable, rhsVal] = rhs->getPreNetworkValue(env);
-                if (lhsAvailable && rhsAvailable) {
-                    return Evaluate(m_op, lhsVal, rhsVal) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
+                if (lhs.preNetworkAvailable() && rhs.preNetworkAvailable()) {
+                    return compare(m_op, lhs, rhs, env) ? Tristate::TRUE_STATE : Tristate::FALSE_STATE;
                 }
 
                 return Tristate::UNKNOWN_STATE;
@@ -206,15 +260,12 @@ namespace PortQuery {
 
    NetworkProtocol ComparisonExpression::collectRequiredProtocols(void) const {
 
-       return std::visit([](auto&& lhs, auto&& rhs) { 
-               return lhs->collectRequiredProtocols() | rhs->collectRequiredProtocols(); 
-            }, m_LHSTerminal, m_RHSTerminal);
+       return getProtocolFromTerminal(m_LHSTerminal) | getProtocolFromTerminal(m_RHSTerminal);
    }
-
 
    // NULL EXPRESSION
 
-   Tristate NULLExpression::attemptPreNetworkEval(EnvironmentPtr env) const {
+   Tristate NULLExpression::attemptPreNetworkEval(EnvironmentPtr env) {
 
        return Tristate::TRUE_STATE;
    }
@@ -260,7 +311,7 @@ namespace PortQuery {
     }
 
     
-    Tristate SelectStatement::attemptPreNetworkEval(EnvironmentPtr env) const {
+    Tristate SelectStatement::attemptPreNetworkEval(EnvironmentPtr env) {
 
         return m_tableExpression->attemptPreNetworkEval(env);
     }

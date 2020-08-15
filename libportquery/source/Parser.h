@@ -7,9 +7,15 @@
 #include "Statement.h"
 
 
-#define UNUSED_PARAMETER(x) (void) (x)
-
 namespace PortQuery {
+
+    std::string getExtendedTokenInfo(const NumericToken n);
+    std::string getExtendedTokenInfo(const UserToken u);
+    std::string getExtendedTokenInfo(const ComparisonToken c);
+    std::string getExtendedTokenInfo(const KeywordToken k);
+    std::string getExtendedTokenInfo(const ColumnToken c);
+    std::string getExtendedTokenInfo(const QueryResultToken q);
+    std::string getTokenString(const Token t);
 
     class Parser { 
 

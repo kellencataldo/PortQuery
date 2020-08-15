@@ -16,7 +16,7 @@ namespace PortQuery {
 
             virtual bool submitPortForScan(const uint16_t port, const NetworkProtocol requestedProtocols) = 0;
             virtual void setPort(const uint16_t port);
-            virtual bool getPort(void) const;
+            virtual uint16_t getPort(void) const;
 
         private:
             uint16_t m_port;

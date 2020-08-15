@@ -223,6 +223,7 @@ namespace PortQuery {
             m_lexer.peek());
     }
 
+/*
 
     bool canCompareProtocolOperands(const ComparisonToken::OpType op, const Token rhs) {
 
@@ -248,6 +249,8 @@ namespace PortQuery {
             lhs);
     }
 
+    */
+
 
     SOSQLExpression Parser::parseComparisonExpression(const Token lhs) {
 
@@ -258,12 +261,15 @@ namespace PortQuery {
             throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
         }
 
+
+        /*
         else if (!canCompareOperands(lhs, comp.m_opType, rhs)) {
 
             std::string exceptionString = "Unable to compare operands: " + getTokenString(lhs) + " " + getTokenString(rhs);
             exceptionString += ". Operator: " + getTokenString(comp);
             throw std::invalid_argument(exceptionString);
         }
+        */
 
         return std::make_unique<ComparisonExpression>(ComparisonExpression{comp.m_opType, lhs, rhs});
     }
@@ -283,12 +289,14 @@ namespace PortQuery {
             throw std::invalid_argument("Invalid token type specified in expression: " + getTokenString(rhs));
         }
 
+        /*
         else if (!canCompareOperands(lhs, op, rhs)) {
 
             std::string exceptionString = "Unable to compare operands in IS expression: ";
             exceptionString += getTokenString(lhs) + " " + getTokenString(rhs);
             throw std::invalid_argument(exceptionString);
         }
+        */
 
         return std::make_unique<ComparisonExpression>(ComparisonExpression{op, lhs, rhs});
     }
@@ -302,11 +310,14 @@ namespace PortQuery {
         }
 
         const NumericToken lowerBound = std::get<NumericToken>(m_lexer.nextToken());
+
+        /*
         if (!canCompareOperands(lhs, ComparisonToken::OP_GT, lowerBound)) {
             std::string exceptionString = "Unable to compare operands in BETWEEN expression: ";
             exceptionString += getTokenString(lhs) + " " + getTokenString(lowerBound);
             throw std::invalid_argument(exceptionString);
         }
+        */
 
         if (!MATCH_KEYWORD<KeywordToken::AND>(m_lexer.nextToken())) {
             throw std::invalid_argument("AND keyword missing from BETWEEN clause");

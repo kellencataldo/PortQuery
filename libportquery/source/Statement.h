@@ -19,65 +19,66 @@ namespace PortQuery {
         TRUE_STATE = 1,
     };
 
+    struct NumericTerminal;
+    struct PortTerminal;
+    struct QueryResultTerminal;
+    struct ProtocolTerminal;
+    struct IExpression;
+    class SelectStatement;
+
+    using SOSQLTerminal = std::variant<NumericTerminal, PortTerminal, QueryResultTerminal, ProtocolTerminal>;
+    using SOSQLExpression = std::unique_ptr<IExpression>;
+    using SOSQLSelectStatement = std::unique_ptr<SelectStatement>;
+
     Tristate operator||(const Tristate lhs, const Tristate rhs);
     Tristate operator&&(const Tristate lhs, const Tristate rhs);
     Tristate operator!(const Tristate rhs);
 
-    template <typename T> struct ITerminal;
-    using SOSQLTerminal = std::variant<std::unique_ptr<ITerminal<uint16_t>>, 
-          std::unique_ptr<ITerminal<PQ_QUERY_RESULT>>>;
+    SOSQLTerminal getTerminalFromToken(const Token t);
 
-    struct IExpression;
-    using SOSQLExpression = std::unique_ptr<IExpression>;
-
-    class SelectStatement;
-    using SOSQLSelectStatement = std::unique_ptr<SelectStatement>;
-
-   template <typename T> struct ITerminal {
-
-       virtual T getValue(EnvironmentPtr env) = 0;
-       virtual std::pair<bool, T> getPreNetworkValue(EnvironmentPtr env);
-       virtual NetworkProtocol collectRequiredProtocols(void) const; 
-       virtual ~ITerminal() = default;
-    };
-
-    struct NumericTerminal : ITerminal<uint16_t> {
+    struct NumericTerminal {
 
         NumericTerminal(const uint16_t value) : m_value(value) { }
-        virtual uint16_t getValue(EnvironmentPtr env) override;
+        uint16_t getValue(EnvironmentPtr);
+        bool compareValue(const ComparisonToken::OpType op, const uint16_t other, EnvironmentPtr);
+        bool preNetworkAvailable(void) const;
 
         uint16_t m_value;
     };
 
-    struct PortTerminal : ITerminal<uint16_t> {
+    struct PortTerminal {
 
-        PortTerminal() = default;
-        virtual uint16_t getValue(EnvironmentPtr env) override;
+        uint16_t getValue(EnvironmentPtr env);
+        bool compareValue(const ComparisonToken::OpType op, const uint16_t other, EnvironmentPtr env);
+        bool preNetworkAvailable() const;
     };
 
-    struct QueryResultTerminal : ITerminal<PQ_QUERY_RESULT> {
+    struct QueryResultTerminal {
 
         QueryResultTerminal(const PQ_QUERY_RESULT queryResult) : m_queryResult(queryResult) { }
-        virtual PQ_QUERY_RESULT getValue(EnvironmentPtr env) override;
+
+        PQ_QUERY_RESULT getValue(EnvironmentPtr);
+        bool compareValue(const ComparisonToken::OpType op, const PQ_QUERY_RESULT other, EnvironmentPtr);
+        bool preNetworkAvailable(void) const;
+
         PQ_QUERY_RESULT m_queryResult;
     };
 
-    struct ProtocolTerminal : ITerminal<PQ_QUERY_RESULT> {
+    struct ProtocolTerminal {
 
         ProtocolTerminal(const NetworkProtocol protocol) : m_protocol(protocol) { }
 
-        virtual PQ_QUERY_RESULT getValue(EnvironmentPtr env) override;
-        virtual std::pair<bool, PQ_QUERY_RESULT> getPreNetworkValue(EnvironmentPtr env) override;
-        virtual NetworkProtocol collectRequiredProtocols(void) const override;
+        PQ_QUERY_RESULT getValue(EnvironmentPtr env);
+        bool compareValue(const ComparisonToken::OpType op, const PQ_QUERY_RESULT other, EnvironmentPtr env);
+        bool preNetworkAvailable(void) const;
+
         NetworkProtocol m_protocol;
     };
 
 
-    SOSQLTerminal getTerminalFromToken(const Token t);
-
     struct IExpression {
 
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const = 0;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) = 0;
         virtual NetworkProtocol collectRequiredProtocols(void) const = 0;
 
         virtual ~IExpression() = default;
@@ -88,7 +89,7 @@ namespace PortQuery {
 
         ORExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
         SOSQLExpression m_left;
         SOSQLExpression m_right;
@@ -99,7 +100,7 @@ namespace PortQuery {
 
         ANDExpression(SOSQLExpression left, SOSQLExpression right) : m_left(std::move(left)), m_right(std::move(right)) { }
 
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         SOSQLExpression m_left;
@@ -110,7 +111,7 @@ namespace PortQuery {
     struct NOTExpression : IExpression {
 
         NOTExpression(SOSQLExpression expr) : m_expr(std::move(expr)) { }
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         SOSQLExpression m_expr;
@@ -120,11 +121,11 @@ namespace PortQuery {
     struct BETWEENExpression : IExpression {
 
         BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token t) :
-            m_lowerBound(std::move(std::make_unique<NumericTerminal>(lowerBound))), 
-            m_upperBound(std::move(std::make_unique<NumericTerminal>(lowerBound))), 
+            m_lowerBound(NumericTerminal{lowerBound}), 
+            m_upperBound(NumericTerminal{upperBound}), 
             m_terminal(getTerminalFromToken(t)) { }
 
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         SOSQLTerminal m_lowerBound;
@@ -137,7 +138,7 @@ namespace PortQuery {
 
         ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op), 
             m_LHSTerminal(getTerminalFromToken(lhs)), m_RHSTerminal(getTerminalFromToken(rhs)) { }
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
         ComparisonToken::OpType m_op;
@@ -147,7 +148,7 @@ namespace PortQuery {
 
     struct NULLExpression : IExpression {
 
-        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+        virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
     };
 
@@ -182,7 +183,7 @@ namespace PortQuery {
 
             virtual NetworkProtocol collectRequiredProtocols(void) const override;
         
-            virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) const override;
+            virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
 
             SelectSet getSelectSet() const;
 

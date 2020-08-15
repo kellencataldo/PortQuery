@@ -19,7 +19,7 @@ namespace PortQuery {
         m_port = port;
     }
 
-    bool IEnvironment::getPort(void) const  {
+    uint16_t IEnvironment::getPort(void) const  {
 
         return m_port;
     }
