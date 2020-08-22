@@ -36,16 +36,16 @@ namespace PortQuery {
 
     bool PQConn::run() {
 
-        static constexpr uint32_t MAX_PORT = static_cast<uint16_t>(-1);
-        const NetworkProtocol requiredProtocols = m_selectStatement->collectRequiredProtocols();
-
         EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
+        env->setProtocolsToScan(m_selectStatement->collectRequiredProtocols());
+
+        static constexpr uint32_t MAX_PORT = static_cast<uint16_t>(-1);
         for (uint32_t port = 0; port <= MAX_PORT; port++) {
 
             env->setPort(port);
             if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(env)) {
 
-                env->submitPortForScan(static_cast<uint16_t>(port), requiredProtocols);
+                env->scanPort();
             }
         }
 

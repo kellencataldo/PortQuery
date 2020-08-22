@@ -1,5 +1,6 @@
 #include "Environment.h"
 
+
 namespace PortQuery {
 
     GeneratorFunction EnvironmentFactory::m_generator = defaultGenerator;
@@ -14,6 +15,12 @@ namespace PortQuery {
         return m_generator(threadCount);
     }
 
+
+    void IEnvironment::setProtocolsToScan(const NetworkProtocol protocols) {
+
+        m_protocolsToScan = protocols;
+    }
+
     void IEnvironment::setPort(const uint16_t port) {
 
         m_port = port;
@@ -24,7 +31,7 @@ namespace PortQuery {
         return m_port;
     }
 
-    bool NetworkEnvironment::submitPortForScan(const uint16_t port, NetworkProtocol requestedProtocols) {
+    bool NetworkEnvironment::scanPort(void) {
 
         return true;
     };

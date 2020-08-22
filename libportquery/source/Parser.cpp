@@ -139,6 +139,18 @@ namespace PortQuery {
 
         // parse end here, check for EOF and semicolon
         // parse where statement here.
+
+        if (MATCH<PunctuationToken<';'>>(m_lexer.peek())) {
+
+            m_lexer.nextToken();
+        }
+
+        const Token t = m_lexer.peek();
+        if(!MATCH<EOFToken>(t)) {
+
+            throw std::invalid_argument("Invalid token type specified after complete query: " + getTokenString(t));
+        }
+
         return std::move(std::make_unique<SelectStatement>(SelectStatement{selectedSet, tableReference, std::move(tableExpression)}));
     }
 

@@ -12,7 +12,7 @@ class MockEnvironment : public IEnvironment {
 
     public:
 
-        virtual bool submitPortForScan(const uint16_t port, const NetworkProtocol requestedProtocols) override {
+        virtual bool scanPort(void) override {
 
             return true;
         }

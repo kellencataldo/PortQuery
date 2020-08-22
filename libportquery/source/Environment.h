@@ -14,12 +14,14 @@ namespace PortQuery {
 
         public:
 
-            virtual bool submitPortForScan(const uint16_t port, const NetworkProtocol requestedProtocols) = 0;
+            virtual bool scanPort(void) = 0;
+            virtual void setProtocolsToScan(const NetworkProtocol protocols);
             virtual void setPort(const uint16_t port);
             virtual uint16_t getPort(void) const;
 
         private:
             uint16_t m_port;
+            NetworkProtocol m_protocolsToScan;
     };
 
 
@@ -32,7 +34,7 @@ namespace PortQuery {
         public:
 
             NetworkEnvironment(const int threadCount) : m_threadPool(threadCount) { }
-            virtual bool submitPortForScan(const uint16_t port, NetworkProtocol requestedProtocols) override;
+            virtual bool scanPort(void) override;
 
         private:
 
