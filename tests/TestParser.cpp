@@ -99,7 +99,14 @@ TEST(ParseSOSQLStatements, ParseWHEREStatement) {
     env->setPort(100);
     EXPECT_TRUE(Tristate::FALSE_STATE == select_T5->attemptPreNetworkEval(env));
 
+
+    // just an assortment of nonsensical SOSQL statements, feel free to add
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE NOT PORT = CLOSED").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE UDP AND CLOSED").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE REJECTED").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE 1 = OPEN").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE TCP = 5").parseSOSQLStatement(), std::invalid_argument);
 }
 
 
