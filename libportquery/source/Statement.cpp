@@ -19,6 +19,19 @@ namespace PortQuery {
         return static_cast<Tristate>(-static_cast<underlying>(rhs)); 
     }
 
+    std::string getTerminalString(const SOSQLTerminal terminal) {
+
+       return std::visit(overloaded {
+               [] (PortTerminal) { return "[PORT TERMINAL]"; },
+               [] (NumericTerminal) { return "[NUMERIC TERMINAL]"; },
+               [] (ProtocolTerminal) { return "[PROTOCOL Terminal]"; },
+               [] (QueryResultTerminal) { return "[QUERY RESULT TERMINAL]"; },
+               // throw here?
+               [] (auto) { return "[UNKNOWN TERMINAL]"; }, 
+            },
+        terminal);
+    }
+
     template <typename T> bool performCompare(const ComparisonToken::OpType op, const T lhs, const T rhs) {
 
         switch (op) {
@@ -37,6 +50,61 @@ namespace PortQuery {
             default:
                 return false; // need better error handling 
         }
+    }
+
+    template<typename C, typename R, typename... Args> struct MethodTraits {
+        using ClassType = C;
+        using ReturnType = R;
+        using ArgumentTypes = std::tuple<Args...>;
+    };
+
+    template<typename C, typename R, typename... Args> MethodTraits<C, R, Args...> getMethodTraits(R(C::*)(Args...)) { 
+
+        return { }; 
+    }
+
+    template <typename L, typename R> constexpr auto matchComparisonTraits() -> bool {
+
+        using ArgumentList = typename decltype(getMethodTraits(&L::compareValue))::ArgumentTypes;
+        static_assert(std::tuple_size<ArgumentList>::value == 3, "Argument required to compare");
+        using RequiredArgument = typename std::tuple_element<1, ArgumentList>::type;
+        using ProvidedArgument = typename decltype(getMethodTraits(&R::getValue))::ReturnType;
+        return std::is_same_v<RequiredArgument, ProvidedArgument>;
+    }
+
+    template <typename L, typename R> constexpr auto isValidComparison(int) -> decltype(std::declval<L>().compareValue(
+                std::declval<ComparisonToken::OpType>(),
+                std::declval<R>().getValue(std::declval<EnvironmentPtr>()), 
+                std::declval<EnvironmentPtr>()),
+            matchComparisonTraits<L,R>()) {
+
+        return matchComparisonTraits<L,R>();
+    }
+
+    template <typename L, typename R> constexpr auto isValidComparison(...) {
+
+        return std::false_type();
+    }
+
+    bool canCompareTerminals(SOSQLTerminal lhs, SOSQLTerminal rhs) {
+
+       return std::visit( [] (auto&& l, auto&& r) -> bool { 
+               return isValidComparison<std::remove_reference_t<decltype(l)>, std::remove_reference_t<decltype(r)>>(int());
+            },
+
+        lhs, rhs);
+    }
+
+    template <class L, class R> auto compare(const ComparisonToken::OpType op, L& lhs, R& rhs, EnvironmentPtr env) -> 
+        typename std::enable_if<isValidComparison<L, R>(int()), bool>::type {
+        return lhs.compareValue(op, rhs.getValue(env), env);
+    }
+
+    template <class L, class R> auto compare(const ComparisonToken::OpType op, L& lhs, R& rhs, EnvironmentPtr env) -> 
+        typename std::enable_if<!isValidComparison<L, R>(int()), bool>::type {
+        const std::string LHS_string = getTerminalString(lhs);
+        const std::string RHS_string = getTerminalString(rhs);
+        throw std::invalid_argument("Unable to perform comparison on provided types: " + LHS_string + " " + RHS_string);
     }
 
     uint16_t NumericTerminal::getValue(EnvironmentPtr env) { 
@@ -102,54 +170,7 @@ namespace PortQuery {
         return false;
     }
 
-    template<typename C, typename R, typename... Args> struct MethodTraits {
-        using ClassType = C;
-        using ReturnType = R;
-        using ArgumentTypes = std::tuple<Args...>;
-    };
-
-    template<typename C, typename R, typename... Args> MethodTraits<C, R, Args...> getMethodTraits(R(C::*)(Args...)) { 
-
-        return { }; 
-    }
-
-    template <typename L, typename R> constexpr auto matchComparisonTraits() -> bool {
-
-        using ArgumentList = typename decltype(getMethodTraits(&L::compareValue))::ArgumentTypes;
-        static_assert(std::tuple_size<ArgumentList>::value == 3, "Argument required to compare");
-        using RequiredArgument = typename std::tuple_element<1, ArgumentList>::type;
-        using ProvidedArgument = typename decltype(getMethodTraits(&R::getValue))::ReturnType;
-        return std::is_same_v<RequiredArgument, ProvidedArgument>;
-    }
-
-    template <typename L, typename R> constexpr auto isValidComparison(int) -> decltype(std::declval<L>().compareValue(
-                std::declval<ComparisonToken::OpType>(),
-                std::declval<R>().getValue(std::declval<EnvironmentPtr>()), 
-                std::declval<EnvironmentPtr>()),
-            matchComparisonTraits<L,R>()) {
-
-        return matchComparisonTraits<L,R>();
-    }
-
-    template <typename L, typename R> constexpr auto isValidComparison(...) {
-
-        return std::false_type();
-    }
-
-    template <class L, class R> auto compare(const ComparisonToken::OpType op, L& lhs, R& rhs, EnvironmentPtr env) -> 
-        typename std::enable_if<isValidComparison<L, R>(int()), bool>::type {
-        return lhs.compareValue(op, rhs.getValue(env), env);
-    }
-
-    template <class L, class R> auto compare(const ComparisonToken::OpType op, L& lhs, R& rhs, EnvironmentPtr env) -> 
-        typename std::enable_if<!isValidComparison<L, R>(int()), bool>::type {
-        // do more stuff here.
-        throw std::invalid_argument("Unable to perform comparison on provided types");
-    }
-
     SOSQLTerminal getTerminalFromToken(const Token t) {
-
-//        return NumericTerminal{4 };
 
         return std::visit(overloaded {
                     [] (const NumericToken n) -> SOSQLTerminal { return NumericTerminal{n.m_value}; },
@@ -170,10 +191,7 @@ namespace PortQuery {
                         throw std::invalid_argument("Unable to convert unknown token to terminal" + getTokenString(t));
                     }, },
                 t);
- //               */
         }
-
-    // OR EXPRESSION
 
     Tristate ORExpression::attemptPreNetworkEval(EnvironmentPtr env) {
 
@@ -212,13 +230,25 @@ namespace PortQuery {
    }
 
 
-    NetworkProtocol getProtocolFromTerminal(const SOSQLTerminal t) {
+   NetworkProtocol getProtocolFromTerminal(const SOSQLTerminal t) {
 
-        return std::visit(overloaded {
-                [] (const ProtocolTerminal p) { return p.m_protocol; },
-                [] (auto) { return NetworkProtocol::NONE; }, 
+       return std::visit(overloaded {
+               [] (const ProtocolTerminal p) { return p.m_protocol; },
+               [] (auto) { return NetworkProtocol::NONE; }, 
             }, t);
-    }
+   }
+
+   BETWEENExpression::BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token t) :
+       m_lowerBound(NumericTerminal{lowerBound}), 
+       m_upperBound(NumericTerminal{upperBound}), 
+       m_terminal(getTerminalFromToken(t)) { 
+
+       if (!canCompareTerminals(m_terminal, m_lowerBound)) {
+           const std::string LHS_string = getTerminalString(m_terminal);
+           const std::string RHS_string = getTerminalString(m_lowerBound);
+           throw std::invalid_argument("Unable to perform comparison on provided types: " + LHS_string + " " + RHS_string);
+       }
+   }
 
    Tristate BETWEENExpression::attemptPreNetworkEval(EnvironmentPtr env) {
 
@@ -243,6 +273,15 @@ namespace PortQuery {
    }
 
    // Comparison expression
+   ComparisonExpression::ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : 
+       m_op(op), m_LHSTerminal(getTerminalFromToken(lhs)), m_RHSTerminal(getTerminalFromToken(rhs)) { 
+
+       if (!canCompareTerminals(m_LHSTerminal, m_RHSTerminal)) {
+           const std::string LHS_string = getTerminalString(m_LHSTerminal);
+           const std::string RHS_string = getTerminalString(m_RHSTerminal);
+           throw std::invalid_argument("Unable to perform comparison on provided types: " + LHS_string + " " + RHS_string);
+       }
+   }
 
    Tristate ComparisonExpression::attemptPreNetworkEval(EnvironmentPtr env) {
 

@@ -36,6 +36,8 @@ namespace PortQuery {
 
     bool PQConn::run() {
 
+        // should this throw error if no userprovided callback is present?
+
         EnvironmentPtr env = EnvironmentFactory::createEnvironment(m_threadCount);
         env->setProtocolsToScan(m_selectStatement->collectRequiredProtocols());
 
@@ -48,6 +50,21 @@ namespace PortQuery {
                 env->scanPort();
             }
         }
+
+        /*
+
+        for (uint32_t port = 0; port <= MAX_PORT; port++) {
+
+            env->setPort(port);
+            if (m_selectStatement->postNetworkEval(env)) {
+
+                // call back here. m_selectStatement->getCurrentRepresentation()
+
+            }
+
+        }
+
+        */
 
         return true;
     }

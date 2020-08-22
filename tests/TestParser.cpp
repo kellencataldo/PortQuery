@@ -98,6 +98,8 @@ TEST(ParseSOSQLStatements, ParseWHEREStatement) {
 
     env->setPort(100);
     EXPECT_TRUE(Tristate::FALSE_STATE == select_T5->attemptPreNetworkEval(env));
+
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE NOT PORT = CLOSED").parseSOSQLStatement(), std::invalid_argument);
 }
 
 

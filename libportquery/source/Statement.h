@@ -120,10 +120,7 @@ namespace PortQuery {
 
     struct BETWEENExpression : IExpression {
 
-        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token t) :
-            m_lowerBound(NumericTerminal{lowerBound}), 
-            m_upperBound(NumericTerminal{upperBound}), 
-            m_terminal(getTerminalFromToken(t)) { }
+        BETWEENExpression(const uint16_t lowerBound, const uint16_t upperBound, const Token t);
 
         virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
@@ -136,8 +133,7 @@ namespace PortQuery {
 
     struct ComparisonExpression : IExpression {
 
-        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs) : m_op(op), 
-            m_LHSTerminal(getTerminalFromToken(lhs)), m_RHSTerminal(getTerminalFromToken(rhs)) { }
+        ComparisonExpression(const ComparisonToken::OpType op, const Token lhs, const Token rhs);
         virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
         virtual NetworkProtocol collectRequiredProtocols(void) const override;
 
