@@ -33,7 +33,7 @@ set_target_properties(tests PROPERTIES
     PREFIX ""
 )
 
-target_link_libraries(tests gmock gtest_main)
+target_link_libraries(tests PRIVATE gmock gtest_main)
 if (COVERAGE)
     target_compile_options(tests PRIVATE --coverage)
     target_link_libraries(tests PRIVATE --coverage)
