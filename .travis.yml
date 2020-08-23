@@ -10,7 +10,9 @@ dist: bionic
 compiler: gcc
 
 before_script:
+    - sudo apt-get update
     - pip install --user cpp-coveralls
+    - sudo apt-get install exuberant-ctags 
     - cd $TRAVIS_BUILD_DIR
     - echo $TRAVIS_BUILD_DIR
     - cmake -DCOVERAGE=1 .
