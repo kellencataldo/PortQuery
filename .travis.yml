@@ -22,4 +22,4 @@ script:
     - tests/tests
 
 after_success:
-    - coveralls --root . -E ".*gtest.*" -E ".*CMakeFiles.*" -e "tests"
+    - coveralls --root . -E ".*gtest.*" -E ".*CMakeFiles.*" -E "*Test*.cpp"
