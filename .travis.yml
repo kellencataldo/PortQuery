@@ -10,13 +10,13 @@ dist: bionic
 compiler: gcc
 
 before_script:
+    - pip install --user cpp-coveralls
     - cd $TRAVIS_BUILD_DIR
-    - cmake .
-    - cd tests
-    - make
+    - cmake -DCOVERAGE=1 .
+    - cmake --build
 
 script:
-    - ./tests
+    - tests/tests
 
-
-
+after_success:
+    - coveralls --root . -E ".*gtest.*" -E ".*CMakeFiles.*"

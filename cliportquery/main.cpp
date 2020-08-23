@@ -52,11 +52,11 @@ int main(int argc, char* args[]) {
 
     std::unique_ptr<QueryContext> context = std::make_unique<QueryContext>(QueryContext{});
 
-    PortQuery pq{ QueryCallback, context.get(), timeout, threadCount};
+//    PortQuery pq{ QueryCallback, context.get(), timeout, threadCount};
 
-    pq.execute("cool");
+//    pq.execute("cool");
     const char ugh[] = "coool";
-    pq.execute(ugh);
+ //   pq.execute(ugh);
 
     return 0;
 }

@@ -34,4 +34,9 @@ set_target_properties(tests PROPERTIES
 )
 
 target_link_libraries(tests gmock gtest_main)
+if (COVERAGE)
+    target_compile_options(tests PRIVATE --coverage)
+    target_link_libraries(tests PRIVATE --coverage)
+endif()
+
 add_test(NAME unit_tests COMMAND tests)
