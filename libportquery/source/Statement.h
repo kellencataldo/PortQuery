@@ -23,6 +23,7 @@ namespace PortQuery {
     struct PortTerminal;
     struct QueryResultTerminal;
     struct ProtocolTerminal;
+
     struct IExpression;
     class SelectStatement;
 
@@ -153,23 +154,17 @@ namespace PortQuery {
 
         public:
 
-            using ColumnVector = std::vector<ColumnToken::Column>;
+            using ColumnVector = std::vector<SOSQLTerminal>;
 
-            SelectSet(const std::initializer_list<ColumnToken::Column> columns) : m_selectedColumns(columns) { }
+            SelectSet(const std::initializer_list<ColumnToken> columns);
 
-            void addColumn(const ColumnToken::Column c);
-            ColumnVector getSelectedColumns(void) const;
+            void addColumn(const ColumnToken c);
+            PQ_ROW getSelectedColumns(EnvironmentPtr env);
 
             ColumnVector::const_iterator begin() const;
             ColumnVector::const_iterator end() const;
 
-            bool operator==(const std::vector<ColumnToken::Column>& other) const;
-            bool operator==(const SelectSet& other) const;
-
-            friend bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs);
-
         private:
-
             ColumnVector m_selectedColumns;
     };
 
@@ -179,13 +174,8 @@ namespace PortQuery {
                 m_selectedSet(std::move(selectedSet)), m_tableReference(std::move(tableReference)), 
                 m_tableExpression(std::move(tableExpression)) { }
 
-
             virtual NetworkProtocol collectRequiredProtocols(void) const override;
-        
             virtual Tristate attemptPreNetworkEval(EnvironmentPtr env) override;
-
-            SelectSet getSelectSet() const;
-
             virtual ~SelectStatement() = default;
             SelectStatement(SelectStatement&&) = default;
             SelectStatement &operator=(SelectStatement&&) = default;

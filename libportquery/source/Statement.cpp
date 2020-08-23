@@ -315,14 +315,10 @@ namespace PortQuery {
    }
 
 
-   void SelectSet::addColumn(const ColumnToken::Column c) {
+   // SELECT SET
+   SelectSet::SelectSet(const std::initializer_list<ColumnToken> columns) { 
 
-       m_selectedColumns.push_back(c);
-   }
-
-   SelectSet::ColumnVector SelectSet::getSelectedColumns(void) const {
-       
-       return m_selectedColumns;
+       std::transform(columns.begin(), columns.end(), std::back_inserter(m_selectedColumns), getTerminalFromToken); 
    }
 
    SelectSet::ColumnVector::const_iterator SelectSet::begin() const {
@@ -335,29 +331,25 @@ namespace PortQuery {
        return m_selectedColumns.end();
    }
 
-   bool SelectSet::operator==(const std::vector<ColumnToken::Column>& other) const {
+   void SelectSet::addColumn(const ColumnToken c) {
 
-       return m_selectedColumns == other;
+       m_selectedColumns.push_back(getTerminalFromToken(c));
    }
+    
+   PQ_ROW SelectSet::getSelectedColumns(EnvironmentPtr env) {
 
-   bool SelectSet::operator==(const SelectSet& other) const {
+       // yep, still in hell
+       auto compLambda = [env] (SOSQLTerminal s) -> PQ_QUERY_RESULT {
+           return std::visit( [env] (auto&& t) ->PQ_QUERY_RESULT { 
+               return PQ_QUERY_RESULT{t.getValue(env)};
+            }, s); };
 
-       return m_selectedColumns == other.getSelectedColumns();
+       PQ_ROW row { };
+       std::transform(m_selectedColumns.begin(), m_selectedColumns.end(), std::back_inserter(row), compLambda);
+       return std::move(row);
    }
-   
-   bool operator==(const std::vector<ColumnToken::Column>& lhs, const SelectSet rhs) {
-
-       return rhs == lhs;
-   }
-
-
 
     // SELECT STATEMENT
-
-    SelectSet SelectStatement::getSelectSet() const {
-
-        return m_selectedSet;
-    }
 
     
     Tristate SelectStatement::attemptPreNetworkEval(EnvironmentPtr env) {
@@ -365,25 +357,12 @@ namespace PortQuery {
         return m_tableExpression->attemptPreNetworkEval(env);
     }
 
-
     NetworkProtocol SelectStatement::collectRequiredProtocols() const {
 
         NetworkProtocol requestedProtocols = NetworkProtocol::NONE;
         for (auto i : m_selectedSet) {
 
-            switch (i) {
-
-                case ColumnToken::TCP:
-                   requestedProtocols |= NetworkProtocol::TCP;
-                   break;
-                case ColumnToken::UDP:
-                   requestedProtocols |= NetworkProtocol::UDP;
-                   break;
-                default:
-
-                   // just making the ALE warning go away.
-                   break;
-            }
+            requestedProtocols |= getProtocolFromTerminal(i);
         }
 
         requestedProtocols |= m_tableExpression->collectRequiredProtocols();
