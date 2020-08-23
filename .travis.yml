@@ -12,8 +12,9 @@ compiler: gcc
 before_script:
     - pip install --user cpp-coveralls
     - cd $TRAVIS_BUILD_DIR
+    - echo $TRAVIS_BUILD_DIR
     - cmake -DCOVERAGE=1 .
-    - cmake --build
+    - cmake --build .
 
 script:
     - tests/tests
