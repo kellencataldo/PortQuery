@@ -21,6 +21,15 @@ TEST(ParseHelpCommand, ReturnsFalse) {
     ArgumentParser<emptyOutput> parser(argc_T3, args_T3);
     parser.addCommandFlag("--valid", "dummy command");
     EXPECT_FALSE(parser.parse());
+
+
+    //Cannot retrieve flag as positional argument
+    const int argc_T4 = 3;
+    const char * args_T4[argc_T4] = {"./cli", "--valid", "potential_query_string"};
+    ArgumentParser<emptyOutput> parser_T4(argc_T4, args_T4);
+    parser_T4.addCommandFlag("--valid", "dummy command");
+    EXPECT_TRUE(parser_T4.parse());
+    EXPECT_THROW(parser_T4.getCommand<std::string>("--valid"), std::invalid_argument);
 }
 
 
@@ -47,6 +56,8 @@ TEST(ParseArguments, PositionalArguments) {
     ArgumentParser<emptyOutput> parser2(argc_T2, args_T2);
 
     parser2.addCommand<int>("--intcommand", "help text", 1);
+    EXPECT_THROW(parser2.addCommand<std::string>("--intcommand", "help text", "one"), std::invalid_argument);
+    EXPECT_THROW(parser2.addCommand<std::string>("badFormat", "help text", "bad format"), std::invalid_argument);
     EXPECT_FALSE(parser2.parse());
 
     // Command with no argument supplied counts as a fail
