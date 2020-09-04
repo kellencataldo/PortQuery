@@ -67,7 +67,6 @@ namespace PortQuery {
     struct KeywordToken {
 
         enum Keyword {
-            ALL,
             AND,
             BETWEEN,
             FROM,

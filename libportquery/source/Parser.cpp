@@ -43,26 +43,33 @@ namespace PortQuery {
 
         std::string prefix{"[KEYWORD TOKEN: "};
         switch (k.m_keyword) {
-            case KeywordToken::ALL:
-                prefix += "ALL";
             case KeywordToken::AND:
                 prefix += "AND";
+                break;
             case KeywordToken::BETWEEN: 
                 prefix += "BETWEEN";
+                break;
             case KeywordToken::FROM:
                 prefix += "FROM";
+                break;
             case KeywordToken::IS:
                 prefix += "IS";
+                break;
             case KeywordToken::NOT:
                 prefix += "NOT";
+                break;
             case KeywordToken::OR:
                 prefix += "OR";
+                break;
             case KeywordToken::SELECT:
                 prefix += "SELECT";
+                break;
             case KeywordToken::WHERE:
                 prefix += "WHERE";
+                break;
             default:
                 prefix += "UNKNOWN KEYWORD TOKEN";
+                break;
         }
 
         return prefix + "]";
@@ -250,6 +257,7 @@ namespace PortQuery {
 
     SOSQLExpression Parser::parseISExpression(const Token lhs) {
 
+        m_lexer.nextToken(); // scan past IS token
         Token rhs = m_lexer.nextToken();
         ComparisonToken::OpType op = ComparisonToken::OP_EQ;
         if (MATCH_KEYWORD<KeywordToken::NOT>(rhs)) {

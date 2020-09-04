@@ -11,7 +11,6 @@ namespace PortQuery {
     Token getKeywordTokenFromString(const std::string lexeme) {
 
         static const std::map<std::string, Token> keywordMap { 
-            {"ALL",      KeywordToken{ KeywordToken::ALL }},
             {"AND",      KeywordToken{ KeywordToken::AND }},
             {"BETWEEN",  KeywordToken{ KeywordToken::BETWEEN }},
             {"FROM",     KeywordToken{ KeywordToken::FROM }},

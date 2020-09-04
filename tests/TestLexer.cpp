@@ -175,10 +175,7 @@ TEST(RecognizeTokens, NumericTokens) {
 
 TEST(RecognizeTokens, KeywordTokens) {
 
-    Lexer lexer_T1{"ALL AND BETWEEN FROM IS NOT OR SELECT WHERE"};
-
-    Token token_T1{lexer_T1.nextToken()}; // ALL
-    EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::ALL>(token_T1));
+    Lexer lexer_T1{"AND BETWEEN FROM IS NOT OR SELECT WHERE"};
 
     Token token_T2{lexer_T1.nextToken()}; // AND
     EXPECT_TRUE(MATCH_KEYWORD<KeywordToken::AND>(token_T2));
