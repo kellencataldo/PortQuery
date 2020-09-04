@@ -46,7 +46,7 @@ TEST(ParseSOSQLStatements, ParseErrorStatements) {
     EXPECT_THROW(Parser("INSERT (1,2) INTO GOOGLE.COM").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("* FROM GOOGLE.COM").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM 1.1.1.1 WHERE UDP = OPEN badtoken").parseSOSQLStatement(), std::invalid_argument);
-    EXPECT_THROW(Parser("SELECT * FROM 1.1.1.1; badtoken").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM 1.1.1.1; != ").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE NOT PORT = CLOSED").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE UDP AND CLOSED").parseSOSQLStatement(), std::invalid_argument);
