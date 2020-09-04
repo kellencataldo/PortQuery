@@ -40,24 +40,8 @@ namespace PortQuery {
     class ThreadPool
     {
         public:
-            ThreadPool(const int threadCount) : m_nextQueue{0} {
-
-                m_threadCount = threadCount != 0 ? threadCount : std::thread::hardware_concurrency();
-                for (unsigned int startQueue = 0; startQueue < m_threadCount; startQueue++) {
-                    m_threads.emplace_back([&, startQueue] { workerLoop(startQueue); });
-                }
-            }
-
-            ~ThreadPool() {
-
-                for(auto& q : m_queues) {
-                    q.setDone();
-                }
-
-                for(auto& t : m_threads) {
-                    t.join();
-                }
-            }
+            ThreadPool(const int threadCount);
+            ~ThreadPool();
 
             template<typename Function, typename... Args> 
             std::future<std::invoke_result_t<Function, Args...>> submitWork(Function&& f, Args&&... args);

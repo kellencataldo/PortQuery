@@ -61,6 +61,26 @@ namespace PortQuery {
         return m_queue.empty();
     }
 
+    ThreadPool::ThreadPool(const int threadCount) : m_nextQueue{0} {
+
+        m_threadCount = threadCount != 0 ? threadCount : std::thread::hardware_concurrency();
+        m_queues = std::vector<ThreadSafeWorkQueue>(threadCount);
+        for (unsigned int startQueue = 0; startQueue < m_threadCount; startQueue++) {
+            m_threads.emplace_back([&, startQueue] { workerLoop(startQueue); });
+        }
+    }
+
+    ThreadPool::~ThreadPool() {
+        for(auto& q : m_queues) {
+            q.setDone();
+        }
+
+        for(auto& t : m_threads) {
+            t.join();
+        }
+    }
+ 
+
 
     void ThreadPool::workerLoop(const unsigned int startQueue) {
 

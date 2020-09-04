@@ -23,6 +23,7 @@ add_executable(tests
     TestLexer.cpp
     TestStatement.cpp
     TestParser.cpp
+    TestThreadPool.cpp
     TestPortQuery.cpp
     )
 
