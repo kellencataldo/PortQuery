@@ -63,6 +63,8 @@ TEST(ParseSOSQLStatements, ParseErrorStatements) {
     EXPECT_THROW(Parser("select UDP from reddit.com where port between 80").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select OPEN from reddit.com;    ").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select * from msn.com where 4 = google.com").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select * from where not port = 1").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select TCP, UDP where UDP = open").parseSOSQLStatement(), std::invalid_argument);
 }
 
 
