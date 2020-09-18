@@ -222,8 +222,6 @@ namespace PortQuery {
         // Check to see if we have any punctuation tokens first.
         switch(*m_currentChar) {
             case '*': m_currentChar++; return PunctuationToken<'*'>{ };
-            case '(': m_currentChar++; return PunctuationToken<'('>{ };
-            case ')': m_currentChar++; return PunctuationToken<')'>{ };
             case ',': m_currentChar++; return PunctuationToken<','>{ };
             case ';': m_currentChar++; return PunctuationToken<';'>{ }; // return EOF here? this isn't being handled correctly.
         }

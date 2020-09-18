@@ -134,8 +134,6 @@ namespace PortQuery {
         EOFToken,
         // All the supported punctuation types below, maybe more to come?
         PunctuationToken<'*'>,
-        PunctuationToken<'('>,
-        PunctuationToken<')'>,
         PunctuationToken<','>,
         PunctuationToken<';'>,
 

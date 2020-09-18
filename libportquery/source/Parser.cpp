@@ -121,8 +121,6 @@ namespace PortQuery {
                     [=] (const UserToken u)        { return getExtendedTokenInfo(u); },
                     [=] (const ComparisonToken c)  { return getExtendedTokenInfo(c); },
                     [=] (PunctuationToken<'*'>) { return std::string("[ * ]"); },
-                    [=] (PunctuationToken<'('>) { return std::string("[ ( ]"); }, 
-                    [=] (PunctuationToken<')'>) { return std::string("[ ) ]"); },
                     [=] (PunctuationToken<';'>) { return std::string("[ ; ]"); }, 
                     [=] (PunctuationToken<','>) { return std::string("[ , ]"); },
                     [=] (EOFToken)        { return std::string("[END OF INPUT]"); },

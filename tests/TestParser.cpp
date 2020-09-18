@@ -53,9 +53,9 @@ TEST(ParseSOSQLStatements, ParseErrorStatements) {
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE REJECTED").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE 1 = OPEN").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE TCP = 5").parseSOSQLStatement(), std::invalid_argument);
-    EXPECT_THROW(Parser("select * from 1.1.1.1 where tcp is ==").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select * from 1.1.1.1 where tcp is =").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select 4 from 1.1.1.1 where tcp is closed").parseSOSQLStatement(), std::invalid_argument);
-    EXPECT_THROW(Parser("select (*) from yahoo.com where udp = open").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select *, udp from yahoo.com where udp = open").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select * from 1.1.1.1 where port between 2 and )").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select * from 1.1.1.1 where port between ( and 80").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select * from google.com where port between 1 100").parseSOSQLStatement(), std::invalid_argument);
@@ -65,6 +65,13 @@ TEST(ParseSOSQLStatements, ParseErrorStatements) {
     EXPECT_THROW(Parser("select * from msn.com where 4 = google.com").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select * from where not port = 1").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select TCP, UDP where UDP = open").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select *, * from google.com").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT ; FROM google.com").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT < FROM GOOGLE.COM").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT UDP FROM GOOGLE.COM WHERE TCP < ,;").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT UDP, < FROM GOOGLE.COM WHERE UDP = 4;").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select * FROM FROM google.com").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("Select * from TCP where UDP = 1").parseSOSQLStatement(), std::invalid_argument);
 }
 
 
