@@ -174,7 +174,7 @@ namespace PortQuery {
     class Lexer { 
         public:
             Lexer(const std::string queryString) : m_queryString{std::move(queryString)} {
-                std::for_each(m_queryString.begin(), m_queryString.end(), toupper);
+                std::transform(m_queryString.begin(), m_queryString.end(), m_queryString.begin(), toupper);
                 m_tokenStart = m_queryString.cbegin();
                 m_currentChar = m_queryString.cbegin();
             }
