@@ -66,6 +66,9 @@ TEST(ParseSOSQLStatements, ParseErrorStatements) {
     EXPECT_THROW(Parser("select * from where not port = 1").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select TCP, UDP where UDP = open").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("select *, * from google.com").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("select select from yahoo.com").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM GOOOGLE.COM WHERE UDP = BETWEEN").parseSOSQLStatement(), std::invalid_argument);
+    EXPECT_THROW(Parser("SELECT * FROM GOOGLE.COM WHERE UDP IS NOT NOT OPEN").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT ; FROM google.com").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT < FROM GOOGLE.COM").parseSOSQLStatement(), std::invalid_argument);
     EXPECT_THROW(Parser("SELECT UDP FROM GOOGLE.COM WHERE TCP < ,;").parseSOSQLStatement(), std::invalid_argument);
@@ -144,6 +147,13 @@ TEST(ParseSOSQLStatements, ParseWHEREStatement) {
 
     const auto select_T7 = Parser("SELECT * FROM GOOGLE.COM WHERE PORT IS 500 AND UDP IS OPEN").parseSOSQLStatement();
     EXPECT_TRUE(Tristate::UNKNOWN_STATE == select_T7->attemptPreNetworkEval(env));
+
+    const auto select_T8 = Parser("select * from google.com where PORT IS NOT 4000").parseSOSQLStatement();
+    env->setPort(4000);
+    EXPECT_TRUE(Tristate::FALSE_STATE == select_T8->attemptPreNetworkEval(env));
+
+    env->setPort(4001);
+    EXPECT_TRUE(Tristate::TRUE_STATE == select_T8->attemptPreNetworkEval(env));
 }
 
 
