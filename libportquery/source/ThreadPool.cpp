@@ -64,7 +64,7 @@ namespace PortQuery {
     ThreadPool::ThreadPool(const int threadCount) : m_nextQueue{0} {
 
         m_threadCount = threadCount != 0 ? threadCount : std::thread::hardware_concurrency();
-        m_queues = std::vector<ThreadSafeWorkQueue>(threadCount);
+        m_queues = std::vector<ThreadSafeWorkQueue>(m_threadCount);
         for (unsigned int startQueue = 0; startQueue < m_threadCount; startQueue++) {
             m_threads.emplace_back([&, startQueue] { workerLoop(startQueue); });
         }
@@ -101,7 +101,7 @@ namespace PortQuery {
         }
     }
 
-
+/*
     template<typename Function, typename... Args> 
     std::future<std::invoke_result_t<Function, Args...>> ThreadPool::submitWork(Function&& f, Args&&... args) {
         using WorkType = std::packaged_task<std::invoke_result_t<Function, Args...>()>;
@@ -117,5 +117,7 @@ namespace PortQuery {
         m_queues[currentQueue % m_threadCount].blockingPush(workLambda);
         return workPtr->get_future();
     }
-
+    */
 }
+
+

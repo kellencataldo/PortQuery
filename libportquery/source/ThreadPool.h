@@ -44,7 +44,23 @@ namespace PortQuery {
             ~ThreadPool();
 
             template<typename Function, typename... Args> 
-            std::future<std::invoke_result_t<Function, Args...>> submitWork(Function&& f, Args&&... args);
+            std::future<std::invoke_result_t<Function, Args...>> submitWork(Function&& f, Args&&... args) {
+
+
+                using WorkType = std::packaged_task<std::invoke_result_t<Function, Args...>()>;
+                auto workPtr = std::make_shared<WorkType>(std::bind(std::forward<Function>(f), std::forward<Args>(args)...));
+                auto workLambda = [workPtr] () { (*workPtr)(); };
+                unsigned int currentQueue = m_nextQueue++;
+                for (unsigned int loopIndex = 0; loopIndex < m_threadCount * MAX_LOOPS; loopIndex++) {
+                    if (m_queues[(currentQueue + loopIndex) % m_threadCount].nonBlockingPush(workLambda)) {
+                        return workPtr->get_future();
+                    }
+                }
+
+                m_queues[currentQueue % m_threadCount].blockingPush(workLambda);
+                return workPtr->get_future();
+            }
+
 
         private:
 
