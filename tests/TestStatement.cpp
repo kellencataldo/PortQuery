@@ -17,7 +17,7 @@ class MockEnvironment : public IEnvironment {
 };
 
 
-TEST(CompareTerminals, BETWEENTerminals) {
+TEST(CompareTerminalsPreNetwork, BETWEENTerminals) {
 
     auto* mockGenerator = +[] (const int _) -> EnvironmentPtr { 
         static EnvironmentPtr mockEnv = std::make_shared<MockEnvironment>();
@@ -46,4 +46,20 @@ TEST(CompareTerminals, BETWEENTerminals) {
     EXPECT_THROW(BETWEENExpression(0, 1, QueryResultToken{ PQ_QUERY_RESULT::REJECTED }), std::invalid_argument);
 }
 
+TEST(CompareTerminalsPreNetwork, ComparisonExpression) {
 
+    auto* mockGenerator = +[] (const int _) -> EnvironmentPtr { 
+        static EnvironmentPtr mockEnv = std::make_shared<MockEnvironment>();
+        return mockEnv;
+    };
+
+    EnvironmentFactory::setGenerator(mockGenerator);
+    EnvironmentPtr env = EnvironmentFactory::createEnvironment(0);
+    env->setPort(0);
+
+    ComparisonExpression comparison_T1 = ComparisonExpression(ComparisonToken::OP_EQ, NumericToken{1}, NumericToken{1});
+    ASSERT_TRUE(Tristate::TRUE_STATE == comparison_T1.attemptPreNetworkEval(env));
+
+    // ASSERT
+
+}

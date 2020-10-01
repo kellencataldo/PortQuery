@@ -81,7 +81,7 @@ namespace PortQuery {
         return matchComparisonTraits<L,R>();
     }
 
-    template <typename L, typename R> constexpr auto isValidComparison(...) {
+    template <typename L, typename R> constexpr auto isValidComparison(...) -> std::false_type {
 
         return std::false_type();
     }
