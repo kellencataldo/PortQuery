@@ -40,7 +40,8 @@ namespace PortQuery {
             PQConn(PQCallback const callback=nullptr, 
                     const std::any context=nullptr, 
                     const int timeout=TIMEOUT_DEFAULT,
-                    const int threadCount=THREADCOUNT_DEFAULT);
+                    const int threadCount=THREADCOUNT_DEFAULT,
+                    const int delayMS=DELAYMS_DEFAULT);
 
             ~PQConn();
             PQConn(PQConn&&);
@@ -78,6 +79,10 @@ namespace PortQuery {
             int m_timeout;
             static constexpr int THREADCOUNT_DEFAULT = 0;
             int m_threadCount;
+
+            // this should be increased
+            static constexpr int DELAYMS_DEFAULT = 0;
+            int m_delayMS;
 
             PQCallback m_userCallback;
             std::any m_userContext;

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #include "Statement.h"
 #include "PortQuery.h"
@@ -48,6 +50,7 @@ namespace PortQuery {
             if (Tristate::FALSE_STATE != m_selectStatement->attemptPreNetworkEval(env)) {
 
                 env->scanPort();
+                std::this_thread::sleep_for(std::chrono::milliseconds(m_delayMS));
             }
         }
 
@@ -92,8 +95,10 @@ namespace PortQuery {
         return false;
     }
 
-    PQConn::PQConn(PQCallback const callback, const std::any context, const int timeout, const int threadCount) : 
-        m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount) { }
+    PQConn::PQConn(PQCallback const callback, const std::any context, const int timeout, const int threadCount,
+                  const int delayMS) : 
+        m_userCallback(callback), m_userContext(context), m_timeout(timeout), m_threadCount(threadCount),
+        m_delayMS(delayMS) { }
 
     PQConn::~PQConn() = default;
     PQConn::PQConn(PQConn&&) = default;

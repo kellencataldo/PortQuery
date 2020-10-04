@@ -41,6 +41,9 @@ int main(int argc, char* args[]) {
     parser.addCommand<int>("--timeout", "duration in seconds to wait on a response", 2);
     parser.addCommand<int>("--threads", "number of threads to use (0 = number of processors on the machine", 0);
 
+    // this should be increased by default
+    parser.addCommand<int>("--delay", "duration (in milliseconds) after scanning a port to wait until scanning another", 0);
+
     if(!parser.parse()) {
 
         return EXIT_FAILURE;
