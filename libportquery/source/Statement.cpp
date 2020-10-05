@@ -149,7 +149,7 @@ namespace PortQuery {
 
     bool QueryResultTerminal::preNetworkAvailable(void) const { 
 
-        return false;
+        return true;
     }
 
 
